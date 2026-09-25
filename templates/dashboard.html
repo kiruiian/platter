@@ -1,12 +1,63 @@
 {% extends "base.html" %}
 {% block title %}Dashboard · Platter{% endblock %}
 {% block content %}
-<h1 class="h3 mb-4">Dashboard</h1>
-<div class="row g-3">
-  <div class="col-md-3"><div class="card"><div class="card-body"><div class="text-muted small">Categories</div><div class="fs-3">{{ category_count }}</div></div></div></div>
-  <div class="col-md-3"><div class="card"><div class="card-body"><div class="text-muted small">Menu items</div><div class="fs-3">{{ item_count }}</div></div></div></div>
-  <div class="col-md-3"><div class="card"><div class="card-body"><div class="text-muted small">Tables</div><div class="fs-3">{{ table_count }}</div></div></div></div>
-  <div class="col-md-3"><div class="card"><div class="card-body"><div class="text-muted small">Open orders</div><div class="fs-3">{{ open_orders }}</div></div></div></div>
+<div class="d-flex flex-wrap justify-content-between align-items-end gap-2 mb-4">
+  <div>
+    <p class="text-muted mb-1 text-uppercase small fw-semibold" style="letter-spacing:0.06em">Floor overview</p>
+    <h1 class="brand-font h2 mb-0">Welcome back{% if session.get('full_name') %}, {{ session.get('full_name').split(' ')[0] }}{% endif %}</h1>
+  </div>
+  <span class="badge rounded-pill text-bg-light border px-3 py-2 text-capitalize">{{ session.get('role') }}</span>
 </div>
-<p class="mt-4"><a href="{{ url_for('menu_list') }}" class="btn btn-dark">Manage menu</a></p>
+
+<div class="row g-3 mb-4">
+  <div class="col-6 col-lg-3">
+    <div class="stat-card s1 p-3">
+      <div class="stat-label">Categories</div>
+      <div class="stat-value">{{ category_count }}</div>
+    </div>
+  </div>
+  <div class="col-6 col-lg-3">
+    <div class="stat-card s2 p-3">
+      <div class="stat-label">Menu items</div>
+      <div class="stat-value">{{ item_count }}</div>
+    </div>
+  </div>
+  <div class="col-6 col-lg-3">
+    <div class="stat-card s3 p-3">
+      <div class="stat-label">Tables</div>
+      <div class="stat-value">{{ table_count }}</div>
+    </div>
+  </div>
+  <div class="col-6 col-lg-3">
+    <div class="stat-card s4 p-3">
+      <div class="stat-label">Open orders</div>
+      <div class="stat-value">{{ open_orders }}</div>
+    </div>
+  </div>
+</div>
+
+<h2 class="h5 mb-3">Quick actions</h2>
+<div class="row g-3">
+  <div class="col-md-4">
+    <a class="quick-action" href="{{ url_for('menu_list') }}">
+      <div class="qa-icon">📋</div>
+      <div class="fw-semibold">Menu</div>
+      <div class="small text-muted">Categories, prices, availability</div>
+    </a>
+  </div>
+  <div class="col-md-4">
+    <a class="quick-action" href="{{ url_for('tables_list') }}">
+      <div class="qa-icon">🪑</div>
+      <div class="fw-semibold">Floor</div>
+      <div class="small text-muted">Tables free, occupied, reserved</div>
+    </a>
+  </div>
+  <div class="col-md-4">
+    <div class="quick-action" style="opacity:0.7;cursor:default">
+      <div class="qa-icon">🧾</div>
+      <div class="fw-semibold">Orders</div>
+      <div class="small text-muted">Coming next — open tickets</div>
+    </div>
+  </div>
+</div>
 {% endblock %}

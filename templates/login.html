@@ -1,25 +1,70 @@
 {% extends "base.html" %}
-{% block title %}Login · Platter{% endblock %}
+{% block title %}Sign in · Platter{% endblock %}
+{% block extra_css %}
+<style>
+  body { background: #1c1917 !important; }
+  .login-wrap {
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 1.5rem;
+    background:
+      radial-gradient(ellipse at 20% 20%, rgba(194,65,12,0.35), transparent 50%),
+      radial-gradient(ellipse at 80% 80%, rgba(15,118,110,0.25), transparent 45%),
+      #1c1917;
+  }
+  .login-card {
+    width: 100%;
+    max-width: 420px;
+    background: #fffaf5;
+    border-radius: 1.5rem;
+    padding: 2.25rem;
+    box-shadow: 0 30px 80px rgba(0,0,0,0.35);
+  }
+  .login-card h1 {
+    font-family: "Playfair Display", Georgia, serif;
+    font-weight: 700;
+    font-size: 2rem;
+    margin-bottom: 0.25rem;
+  }
+  .login-card .form-control {
+    border-radius: 0.75rem;
+    padding: 0.7rem 0.9rem;
+    border-color: #e7e5e4;
+  }
+  .login-card .form-control:focus {
+    border-color: #fb923c;
+    box-shadow: 0 0 0 0.2rem rgba(194, 65, 12, 0.15);
+  }
+</style>
+{% endblock %}
 {% block content %}
-<div class="row justify-content-center mt-5">
-  <div class="col-md-5">
-    <div class="card shadow-sm">
-      <div class="card-body p-4">
-        <h1 class="h3 mb-1">Platter</h1>
-        <p class="text-muted mb-4">Restaurant Login</p>
-        <form method="POST">
-          <div class="mb-3">
-            <label class="form-label">Username</label>
-            <input type="text" name="username" class="form-control" required autofocus>
-          </div>
-          <div class="mb-3">
-            <label class="form-label">Password</label>
-            <input type="password" name="password" class="form-control" required>
-          </div>
-          <button type="submit" class="btn btn-dark w-100">Log in</button>
-        </form>
-      </div>
+</main>
+<div class="login-wrap">
+  <div class="login-card">
+    <div class="text-center mb-4">
+      <div class="mb-2" style="font-size:2rem">🍽️</div>
+      <h1>Platter</h1>
+      <p class="text-muted mb-0">Restaurant </p>
     </div>
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% for category, message in messages %}
+      <div class="alert alert-{{ category }} py-2">{{ message }}</div>
+      {% endfor %}
+    {% endwith %}
+    <form method="POST">
+      <div class="mb-3">
+        <label class="form-label fw-semibold">Username</label>
+        <input type="text" name="username" class="form-control" required autofocus placeholder="admin">
+      </div>
+      <div class="mb-4">
+        <label class="form-label fw-semibold">Password</label>
+        <input type="password" name="password" class="form-control" required placeholder="••••••••">
+      </div>
+      <button type="submit" class="btn btn-platter w-100 py-2 rounded-pill">Sign In</button>
+    </form>
   </div>
 </div>
+<main class="d-none">
 {% endblock %}
