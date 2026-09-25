@@ -1,0 +1,60 @@
+{% extends "base.html" %}
+{% block title %}Tables · Platter{% endblock %}
+{% block content %}
+<h1 class="h3 mb-4">Restaurant tables</h1>
+
+{% if session.get('role') == 'admin' %}
+<div class="card shadow-sm mb-4">
+  <div class="card-header">Add table</div>
+  <div class="card-body">
+    <form method="POST" action="{{ url_for('tables_create') }}" class="row g-2 align-items-end">
+      <div class="col-md-3">
+        <label class="form-label">Label</label>
+        <input type="text" name="label" class="form-control" placeholder="T1" required>
+      </div>
+      <div class="col-md-3">
+        <label class="form-label">Capacity</label>
+        <input type="number" name="capacity" class="form-control" value="4" min="1">
+      </div>
+      <div class="col-md-3">
+        <button type="submit" class="btn btn-dark">Add</button>
+      </div>
+    </form>
+  </div>
+</div>
+{% endif %}
+
+<div class="row g-3">
+  {% for t in tables %}
+  <div class="col-6 col-md-4 col-lg-3">
+    <div class="card shadow-sm h-100">
+      <div class="card-body">
+        <div class="d-flex justify-content-between">
+          <strong class="fs-4">{{ t.label }}</strong>
+          {% if t.status == 'free' %}
+          <span class="badge text-bg-success">free</span>
+          {% elif t.status == 'occupied' %}
+          <span class="badge text-bg-danger">occupied</span>
+          {% else %}
+          <span class="badge text-bg-warning text-dark">reserved</span>
+          {% endif %}
+        </div>
+        <div class="text-muted small mb-3">{{ t.capacity }} seats</div>
+        {% if session.get('role') in ['admin', 'waiter', 'cashier'] %}
+        <form method="POST" action="{{ url_for('tables_set_status', table_id=t.id) }}" class="d-flex gap-1">
+          <select name="status" class="form-select form-select-sm">
+            <option value="free" {% if t.status=='free' %}selected{% endif %}>free</option>
+            <option value="occupied" {% if t.status=='occupied' %}selected{% endif %}>occupied</option>
+            <option value="reserved" {% if t.status=='reserved' %}selected{% endif %}>reserved</option>
+          </select>
+          <button class="btn btn-sm btn-outline-dark" type="submit">Set</button>
+        </form>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+  {% else %}
+  <p class="text-muted">No tables yet. Admin can add T1, T2…</p>
+  {% endfor %}
+</div>
+{% endblock %}
