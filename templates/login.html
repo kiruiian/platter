@@ -1,0 +1,25 @@
+{% extends "base.html" %}
+{% block title %}Login · Platter{% endblock %}
+{% block content %}
+<div class="row justify-content-center mt-5">
+  <div class="col-md-5">
+    <div class="card shadow-sm">
+      <div class="card-body p-4">
+        <h1 class="h3 mb-1">Platter</h1>
+        <p class="text-muted mb-4">Restaurant Login</p>
+        <form method="POST">
+          <div class="mb-3">
+            <label class="form-label">Username</label>
+            <input type="text" name="username" class="form-control" required autofocus>
+          </div>
+          <div class="mb-3">
+            <label class="form-label">Password</label>
+            <input type="password" name="password" class="form-control" required>
+          </div>
+          <button type="submit" class="btn btn-dark w-100">Log in</button>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

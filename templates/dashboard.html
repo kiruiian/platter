@@ -1,0 +1,12 @@
+{% extends "base.html" %}
+{% block title %}Dashboard · Platter{% endblock %}
+{% block content %}
+<h1 class="h3 mb-4">Dashboard</h1>
+<div class="row g-3">
+  <div class="col-md-3"><div class="card"><div class="card-body"><div class="text-muted small">Categories</div><div class="fs-3">{{ category_count }}</div></div></div></div>
+  <div class="col-md-3"><div class="card"><div class="card-body"><div class="text-muted small">Menu items</div><div class="fs-3">{{ item_count }}</div></div></div></div>
+  <div class="col-md-3"><div class="card"><div class="card-body"><div class="text-muted small">Tables</div><div class="fs-3">{{ table_count }}</div></div></div></div>
+  <div class="col-md-3"><div class="card"><div class="card-body"><div class="text-muted small">Open orders</div><div class="fs-3">{{ open_orders }}</div></div></div></div>
+</div>
+<p class="mt-4"><a href="{{ url_for('menu_list') }}" class="btn btn-dark">Manage menu</a></p>
+{% endblock %}
