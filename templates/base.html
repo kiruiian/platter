@@ -119,22 +119,22 @@
   {% if session.get('user_id') %}
   <nav class="navbar navbar-expand-lg navbar-dark navbar-platter mb-4">
     <div class="container">
-      <a class="navbar-brand" href="{{ url_for('dashboard') }}">Platter</a>
+      <a class="navbar-brand" href="{{ url_for("dashboard.dashboard") }}">Platter</a>
       <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navMain">
         <span class="navbar-toggler-icon"></span>
       </button>
       <div class="collapse navbar-collapse" id="navMain">
         <div class="navbar-nav me-auto">
-          <a class="nav-link" href="{{ url_for('dashboard') }}">Dashboard</a>
+          <a class="nav-link" href="{{ url_for('dashboard.dashboard') }}">Dashboard</a>
 
           {% if session.get('role') in ['admin'] %}
-          <a class="nav-link" href="{{ url_for('menu_list') }}">Menu</a>
+          <a class="nav-link" href="{{ url_for('menu.menu_list') }}">Menu</a>
           <a class="nav-link" href="{{ url_for('users_list') }}">Users</a>
           {% endif %}
 
           {% if session.get('role') in ['admin', 'waiter'] %}
-          <a class="nav-link" href="{{ url_for('tables_list') }}">Floor</a>
-          <a class="nav-link" href="{{ url_for('orders_list') }}">Orders</a>
+          <a class="nav-link" href="{{ url_for('tables.tables_list') }}">Floor</a>
+          <a class="nav-link" href="{{ url_for('orders.orders_list') }}">Orders</a>
           {% endif %}
 
           {% if session.get('role') in ['admin', 'kitchen'] %}
@@ -150,7 +150,7 @@
             <div class="text-white fw-semibold">{{ session.get('full_name') }}</div>
             <div class="text-capitalize">{{ session.get('role') }}</div>
           </div>
-          <form method="POST" action="{{ url_for('logout') }}">
+          <form method="POST" action="{{ url_for('auth.logout') }}">
             <button class="btn btn-sm btn-outline-light rounded-pill px-3" type="submit">Logout</button>
           </form>
         </div>

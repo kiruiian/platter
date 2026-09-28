@@ -3,7 +3,7 @@
 {% block content %}
 <div class="d-flex justify-content-between align-items-center mb-4">
   <h1 class="h3 mb-0 brand-font">Open orders</h1>
-  <a href="{{ url_for('tables_list') }}" class="btn btn-outline-dark btn-sm">Floor</a>
+  <a href="{{ url_for('tables.tables_list') }}" class="btn btn-outline-dark btn-sm">Floor</a>
 </div>
 
 {% if orders %}
@@ -30,7 +30,7 @@
         <td>{{ '%.2f'|format(o.total or 0) }}</td>
         <td class="small text-muted">{{ o.opened_at.strftime('%d %b %H:%M') if o.opened_at else '—' }}</td>
         <td class="text-end">
-          <a class="btn btn-sm btn-outline-dark" href="{{ url_for('order_detail', order_id=o.id) }}">Open</a>
+          <a class="btn btn-sm btn-outline-dark" href="{{ url_for('orders.order_detail', order_id=o.id) }}">Open</a>
         </td>
       </tr>
       {% endfor %}

@@ -1,7 +1,11 @@
 import os
 from datetime import datetime
+from app.routes.orders import orders_bp
+from app.routes.tables import tables_bp
+from app.routes.menu import menu_bp
+from app.routes.dashboard import dashboard_bp
 from decimal import Decimal
-
+from app.routes.auth import auth_bp, login_required
 from dotenv import load_dotenv
 from flask import Flask, flash, redirect, render_template, request, session, url_for
 from app.extensions import db
@@ -28,8 +32,11 @@ app.config["SQLALCHEMY_DATABASE_URI"] = os.environ.get(
 app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
 
 db.init_app(app)
-
-
+app.register_blueprint(auth_bp)
+app.register_blueprint(dashboard_bp)
+app.register_blueprint(menu_bp)
+app.register_blueprint(tables_bp)
+app.register_blueprint(orders_bp)
 
 
 
@@ -76,183 +83,7 @@ with app.app_context():
 
 
 
-from functools import wraps
 
-
-def login_required(roles=None):
-    def decorator(view):
-        @wraps(view)
-        def wrapped(*args, **kwargs):
-            if not session.get("user_id"):
-                flash("Please log in.", "warning")
-                return redirect(url_for("login"))
-            if roles and session.get("role") not in roles and session.get("role") != "admin":
-                flash("Access denied for your role.", "danger")
-                return redirect(url_for("dashboard"))
-            return view(*args, **kwargs)
-        return wrapped
-    return decorator
-
-#Login route
-@app.route("/login", methods=["GET", "POST"])
-def login():
-    if request.method == "POST":
-        username = request.form.get("username", "").strip().lower()
-        password = request.form.get("password", "")
-        user = User.query.filter_by(username=username, active=True).first()
-        if user and user.check_password(password):
-            session.clear()
-            session["user_id"] = user.id
-            session["username"] = user.username
-            session["role"] = user.role
-            session["full_name"] = user.full_name
-            flash(f"Welcome, {user.full_name}!", "success")
-            return redirect(url_for("dashboard"))
-        flash("Invalid username or password.", "danger")
-    return render_template("login.html")
-
-
-@app.route("/logout", methods=["POST"])
-def logout():
-    session.clear()
-    flash("Logged out.", "success")
-    return redirect(url_for("login"))
-
-
-@app.route("/dashboard")
-@login_required()
-def dashboard():
-    return render_template(
-        "dashboard.html",
-        category_count=MenuCategory.query.count(),
-        item_count=MenuItem.query.filter_by(active=True).count(),
-        table_count=RestaurantTable.query.filter_by(active=True).count(),
-        open_orders=MealOrder.query.filter(
-            MealOrder.status.in_(["draft", "submitted", "in_kitchen", "ready"])
-        ).count(),
-    )
-
-
-@app.route("/")
-def home():
-    if session.get("user_id"):
-        return redirect(url_for("dashboard"))
-    return redirect(url_for("login"))
-
-
-# Menu 
-
-@app.route("/menu")
-@login_required()
-def menu_list():
-    categories = (
-        MenuCategory.query.order_by(MenuCategory.sort_order, MenuCategory.name).all()
-    )
-    return render_template("menu.html", categories=categories)
-
-
-@app.route("/menu/categories", methods=["POST"])
-@login_required(roles={"admin"})
-def menu_category_create():
-    name = request.form.get("name", "").strip()
-    if not name:
-        flash("Category name required.", "danger")
-        return redirect(url_for("menu_list"))
-    if MenuCategory.query.filter_by(name=name).first():
-        flash("Category already exists.", "warning")
-        return redirect(url_for("menu_list"))
-    sort_order = request.form.get("sort_order", type=int) or 0
-    db.session.add(MenuCategory(name=name, sort_order=sort_order))
-    db.session.commit()
-    flash(f"Category “{name}” added.", "success")
-    return redirect(url_for("menu_list"))
-
-
-@app.route("/menu/items", methods=["POST"])
-@login_required(roles={"admin"})
-def menu_item_create():
-    name = request.form.get("name", "").strip()
-    category_id = request.form.get("category_id", type=int)
-    try:
-        price = Decimal(request.form.get("price", "0").strip() or "0")
-    except Exception:
-        flash("Invalid price.", "danger")
-        return redirect(url_for("menu_list"))
-    if not name or not category_id or price < 0:
-        flash("Name, category, and valid price required.", "danger")
-        return redirect(url_for("menu_list"))
-    if not MenuCategory.query.get(category_id):
-        flash("Invalid category.", "danger")
-        return redirect(url_for("menu_list"))
-    item = MenuItem(
-        category_id=category_id,
-        name=name,
-        description=request.form.get("description", "").strip() or None,
-        price=price,
-        diet_tags=request.form.get("diet_tags", "").strip() or None,
-        is_available=True,
-        active=True,
-    )
-    db.session.add(item)
-    db.session.commit()
-    flash(f"Item “{name}” added.", "success")
-    return redirect(url_for("menu_list"))
-
-
-@app.route("/menu/items/<int:item_id>/toggle", methods=["POST"])
-@login_required(roles={"admin"})
-def menu_item_toggle(item_id):
-    item = MenuItem.query.get_or_404(item_id)
-    item.is_available = not item.is_available
-    db.session.commit()
-    flash(
-        f"“{item.name}” is now {'available' if item.is_available else 'unavailable'}.",
-        "success",
-    )
-    return redirect(url_for("menu_list"))
-
-@app.route("/tables")
-@login_required()
-def tables_list():
-    tables = (
-        RestaurantTable.query.filter_by(active=True)
-        .order_by(RestaurantTable.label)
-        .all()
-    )
-    return render_template("tables.html", tables=tables)
-
-
-@app.route("/tables", methods=["POST"])
-@login_required(roles={"admin"})
-def tables_create():
-    label = request.form.get("label", "").strip().upper()
-    capacity = request.form.get("capacity", type=int) or 4
-    if not label:
-        flash("Table label required.", "danger")
-        return redirect(url_for("tables_list"))
-    if RestaurantTable.query.filter_by(label=label).first():
-        flash(f"Table {label} already exists.", "warning")
-        return redirect(url_for("tables_list"))
-    db.session.add(
-        RestaurantTable(label=label, capacity=capacity, status="free", active=True)
-    )
-    db.session.commit()
-    flash(f"Table {label} added.", "success")
-    return redirect(url_for("tables_list"))
-
-
-@app.route("/tables/<int:table_id>/status", methods=["POST"])
-@login_required(roles={"admin", "waiter", "cashier"})
-def tables_set_status(table_id):
-    table = RestaurantTable.query.get_or_404(table_id)
-    status = request.form.get("status", "").strip()
-    if status not in {"free", "occupied", "reserved"}:
-        flash("Invalid status.", "danger")
-        return redirect(url_for("tables_list"))
-    table.status = status
-    db.session.commit()
-    flash(f"{table.label} → {status}.", "success")
-    return redirect(url_for("tables_list"))
 
 @app.route("/orders")
 @login_required()
@@ -270,118 +101,16 @@ def orders_list():
     return render_template("orders.html", orders=orders)
 
 
-@app.route("/orders/open/<int:table_id>", methods=["POST"])
-@login_required(roles={"admin", "waiter", "cashier"})
-def order_open_table(table_id):
-    table = RestaurantTable.query.get_or_404(table_id)
-    if not table.active:
-        flash("Table is inactive.", "danger")
-        return redirect(url_for("tables_list"))
-
-    existing = (
-        MealOrder.query.filter(
-            MealOrder.table_id == table.id,
-            MealOrder.status.in_(
-                ["draft", "submitted", "in_kitchen", "ready", "delivered"]
-            ),
-        )
-        .order_by(MealOrder.id.desc())
-        .first()
-    )
-    if existing:
-        flash(f"{table.label} already has an open order.", "warning")
-        return redirect(url_for("order_detail", order_id=existing.id))
-
-    order = MealOrder(
-        order_number=next_order_number(),
-        order_type="dine_in",
-        status="draft",
-        table_id=table.id,
-        opened_by_id=session.get("user_id"),
-    )
-    table.status = "occupied"
-    db.session.add(order)
-    db.session.commit()
-    flash(f"Order {order.order_number} opened on {table.label}.", "success")
-    return redirect(url_for("order_detail", order_id=order.id))
 
 
-@app.route("/orders/<int:order_id>")
-@login_required()
-def order_detail(order_id):
-    order = MealOrder.query.get_or_404(order_id)
-    categories = (
-        MenuCategory.query.filter_by(active=True)
-        .order_by(MenuCategory.sort_order, MenuCategory.name)
-        .all()
-    )
-    return render_template("order_detail.html", order=order, categories=categories)
 
 
-@app.route("/orders/<int:order_id>/add-item", methods=["POST"])
-@login_required(roles={"admin", "waiter", "cashier"})
-def order_add_item(order_id):
-    order = MealOrder.query.get_or_404(order_id)
-    if order.status in {"closed", "cancelled"}:
-        flash("This order is closed.", "warning")
-        return redirect(url_for("order_detail", order_id=order.id))
-
-    item_id = request.form.get("menu_item_id", type=int)
-    qty = request.form.get("quantity", type=int) or 1
-    if qty < 1:
-        qty = 1
-    item = MenuItem.query.get(item_id)
-    if not item or not item.active or not item.is_available:
-        flash("Item not available.", "danger")
-        return redirect(url_for("order_detail", order_id=order.id))
-
-    line = MealOrderLine(
-        meal_order_id=order.id,
-        menu_item_id=item.id,
-        item_name=item.name,
-        unit_price=item.price,
-        quantity=qty,
-        line_total=item.price * qty,
-        status="queued",
-        notes=request.form.get("notes", "").strip()[:255] or None,
-    )
-    db.session.add(line)
-    db.session.flush()
-    recalculate_order_totals(order)
-    db.session.commit()
-    flash(f"Added {qty} × {item.name}.", "success")
-    return redirect(url_for("order_detail", order_id=order.id))
 
 
-@app.route("/orders/<int:order_id>/submit", methods=["POST"])
-@login_required(roles={"admin", "waiter", "cashier"})
-def order_submit(order_id):
-    order = MealOrder.query.get_or_404(order_id)
-    active_lines = [ln for ln in order.lines if ln.status != "void"]
-    if not active_lines:
-        flash("Add at least one item before sending to kitchen.", "danger")
-        return redirect(url_for("order_detail", order_id=order.id))
-    if order.status not in {"draft", "submitted"}:
-        flash("Order cannot be submitted in its current status.", "warning")
-        return redirect(url_for("order_detail", order_id=order.id))
-    order.status = "submitted"
-    db.session.commit()
-    flash(f"{order.order_number} sent to kitchen.", "success")
-    return redirect(url_for("order_detail", order_id=order.id))
 
 
-@app.route("/orders/<int:order_id>/lines/<int:line_id>/void", methods=["POST"])
-@login_required(roles={"admin", "waiter", "cashier"})
-def order_void_line(order_id, line_id):
-    order = MealOrder.query.get_or_404(order_id)
-    line = MealOrderLine.query.filter_by(
-        id=line_id, meal_order_id=order.id
-    ).first_or_404()
-    line.status = "void"
-    recalculate_order_totals(order)
-    db.session.commit()
-    flash(f"Voided {line.item_name}.", "success")
-    return redirect(url_for("order_detail", order_id=order.id))
+
+
 
 @app.route("/kitchen")
 @login_required(roles={"admin", "kitchen"})

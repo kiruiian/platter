@@ -15,7 +15,7 @@
     <div class="text-muted small">Total</div>
     <div class="fs-3 fw-bold">KES {{ '%.2f'|format(order.total or 0) }}</div>
     {% if order.status == 'draft' and session.get('role') in ['admin', 'waiter', 'cashier'] %}
-    <form method="POST" action="{{ url_for('order_submit', order_id=order.id) }}" class="mt-2">
+    <form method="POST" action="{{ url_for('orders.order_submit', order_id=order.id) }}" class="mt-2">
       <button type="submit" class="btn btn-dark">Send to kitchen</button>
     </form>
     {% endif %}
@@ -41,7 +41,7 @@
               <td>{{ '%.2f'|format(line.line_total or 0) }}</td>
               <td class="text-end">
                 {% if line.status != 'void' and order.status not in ['closed', 'cancelled'] and session.get('role') in ['admin', 'waiter', 'cashier'] %}
-                <form method="POST" action="{{ url_for('order_void_line', order_id=order.id, line_id=line.id) }}">
+                <form method="POST" action="{{ url_for('orders.order_void_line', order_id=order.id, line_id=line.id) }}">
                   <button class="btn btn-sm btn-outline-danger" type="submit">Void</button>
                 </form>
                 {% endif %}
@@ -68,7 +68,7 @@
           <h6 class="mt-2">{{ c.name }}</h6>
           {% for item in c.items %}
             {% if item.active and item.is_available %}
-            <form method="POST" action="{{ url_for('order_add_item', order_id=order.id) }}"
+            <form method="POST" action="{{ url_for('orders.order_add_item', order_id=order.id) }}"
                   class="d-flex align-items-center gap-2 mb-2 border-bottom pb-2">
               <input type="hidden" name="menu_item_id" value="{{ item.id }}">
               <div class="flex-grow-1">

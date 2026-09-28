@@ -9,7 +9,7 @@
     <div class="card shadow-sm">
       <div class="card-header">Add category</div>
       <div class="card-body">
-        <form method="POST" action="{{ url_for('menu_category_create') }}">
+        <form method="POST" action="{{ url_for('menu.menu_category_create') }}">
           <div class="mb-2">
             <label class="form-label">Name</label>
             <input type="text" name="name" class="form-control" required placeholder="e.g. Mains">
@@ -27,7 +27,7 @@
     <div class="card shadow-sm">
       <div class="card-header">Add menu item</div>
       <div class="card-body">
-        <form method="POST" action="{{ url_for('menu_item_create') }}" class="row g-2">
+        <form method="POST" action="{{ url_for('menu.menu_item_create') }}" class="row g-2">
           <div class="col-md-4">
             <label class="form-label">Category</label>
             <select name="category_id" class="form-select" required>
@@ -88,7 +88,7 @@
           </td>
           <td class="text-end">
             {% if session.get('role') == 'admin' %}
-            <form method="POST" action="{{ url_for('menu_item_toggle', item_id=item.id) }}" class="d-inline">
+            <form method="POST" action="{{ url_for('menu.menu_item_toggle', item_id=item.id) }}" class="d-inline">
               <button class="btn btn-sm btn-outline-secondary" type="submit">Toggle</button>
             </form>
             {% endif %}
