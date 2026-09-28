@@ -13,6 +13,8 @@ class Payment(db.Model):
     reference = db.Column(db.String(80))
     received_by_id = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=True)
     received_at = db.Column(db.DateTime, default=datetime.utcnow)
+    tendered = db.Column(Numeric(10, 2))      # cash given
+    change_given = db.Column(Numeric(10, 2))  # change returned
 
     meal_order = db.relationship("MealOrder", back_populates="payments")
     received_by = db.relationship("User", back_populates="payments")

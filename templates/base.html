@@ -142,7 +142,7 @@
           {% endif %}
 
           {% if session.get('role') in ['admin', 'cashier'] %}
-          {# <a class="nav-link" href="{{ url_for('cashier_board') }}">Cashier</a> #}
+            <a class="nav-link" href="{{ url_for('cashier.cashier_board') }}">Cashier</a>
           {% endif %}
         </div>
         <div class="d-flex align-items-center gap-3">

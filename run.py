@@ -3,6 +3,7 @@ from datetime import datetime
 from app.routes.orders import orders_bp
 from app.routes.tables import tables_bp
 from app.routes.menu import menu_bp
+from app.routes.cashier import cashier_bp
 from app.routes.dashboard import dashboard_bp
 from decimal import Decimal
 from app.routes.auth import auth_bp, login_required
@@ -41,6 +42,9 @@ app.register_blueprint(tables_bp)
 app.register_blueprint(orders_bp)
 app.register_blueprint(kitchen_bp)
 app.register_blueprint(users_bp)
+app.register_blueprint(cashier_bp)
+
+
 
 
 # Create tables + seed admin 

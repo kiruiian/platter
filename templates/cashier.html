@@ -1,0 +1,96 @@
+{% extends "base.html" %}
+{% block title %}Cashier · Platter{% endblock %}
+{% block content %}
+<h1 class="h3 brand-font mb-4">Cashier</h1>
+<p class="text-muted">Orders ready to bill after kitchen / service.</p>
+
+{% if orders %}
+<div class="row g-3">
+  {% for o in orders %}
+  {% set paid = namespace(v=0) %}
+  {% for p in o.payments %}{% set paid.v = paid.v + (p.amount or 0) %}{% endfor %}
+  {% set balance = (o.total or 0) - paid.v %}
+  <div class="col-md-6">
+    <div class="card shadow-sm h-100">
+      <div class="card-header d-flex justify-content-between">
+        <strong>{{ o.order_number }}</strong>
+        <span class="badge text-bg-secondary">{{ o.status }}</span>
+      </div>
+      <div class="card-body">
+        <div class="small text-muted mb-2">
+          {% if o.table %}Table {{ o.table.label }}{% else %}No table{% endif %}
+          {% if o.customer_name %} · {{ o.customer_name }}{% endif %}
+        </div>
+        <ul class="small">
+          {% for line in o.lines if line.status != 'void' %}
+          <li>{{ line.quantity }} × {{ line.item_name }} — {{ '%.2f'|format(line.line_total or 0) }}</li>
+          {% endfor %}
+        </ul>
+        <div class="mb-2"><strong>Total:</strong> KES {{ '%.2f'|format(o.total or 0) }}</div>
+        <div class="mb-3"><strong>Balance:</strong> KES {{ '%.2f'|format(balance) }}</div>
+
+                <form method="POST" action="{{ url_for('cashier.cashier_pay', order_id=o.id) }}" class="row g-2 cash-form">
+          <div class="col-6">
+            <label class="form-label small">Method</label>
+            <select name="method" class="form-select form-select-sm method-select" required>
+              <option value="cash">Cash</option>
+              <option value="mpesa">M-Pesa</option>
+              <option value="card">Card</option>
+              <option value="charge_to_ward">Charge to ward</option>
+            </select>
+          </div>
+          <div class="col-6 cash-only">
+            <label class="form-label small">Cash received</label>
+            <input type="number" step="0.01" min="0" name="tendered" class="form-control form-control-sm tendered-input"
+                   placeholder="e.g. 1000">
+          </div>
+          <div class="col-6 non-cash d-none">
+            <label class="form-label small">Amount</label>
+            <input type="number" step="0.01" min="0.01" name="amount" class="form-control form-control-sm"
+                   value="{{ '%.2f'|format(balance) }}">
+          </div>
+          <div class="col-12 cash-only small" data-due="{{ '%.2f'|format(balance) }}">
+            Balance due: <strong>KES {{ '%.2f'|format(balance) }}</strong>
+            · Change: <strong class="change-out">KES 0.00</strong>
+          </div>
+          <div class="col-12">
+            <input type="text" name="reference" class="form-control form-control-sm" placeholder="M-Pesa / card ref (optional)">
+          </div>
+          <div class="col-12">
+            <button type="submit" class="btn btn-dark btn-sm w-100">Record payment</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+  {% endfor %}
+</div>
+{% else %}
+<p class="text-muted">No bills waiting. Kitchen must mark an order <strong>ready</strong> first.</p>
+{% endif %}
+<script>
+document.querySelectorAll(".cash-form").forEach((form) => {
+  const method = form.querySelector(".method-select");
+  const cashOnly = form.querySelectorAll(".cash-only");
+  const nonCash = form.querySelectorAll(".non-cash");
+  const tendered = form.querySelector(".tendered-input");
+  const changeOut = form.querySelector(".change-out");
+  const dueEl = form.querySelector("[data-due]");
+  const due = dueEl ? parseFloat(dueEl.dataset.due) : 0;
+
+  function sync() {
+    const isCash = method.value === "cash";
+    cashOnly.forEach((el) => el.classList.toggle("d-none", !isCash));
+    nonCash.forEach((el) => el.classList.toggle("d-none", isCash));
+    if (isCash && tendered && changeOut) {
+      const t = parseFloat(tendered.value || "0");
+      const change = t >= due ? (t - due) : 0;
+      changeOut.textContent = "KES " + change.toFixed(2);
+    }
+  }
+  method.addEventListener("change", sync);
+  if (tendered) tendered.addEventListener("input", sync);
+  sync();
+});
+</script>
+{% endblock %}

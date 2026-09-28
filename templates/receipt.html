@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Receipt {{ payment.id }}</title>
+  <style>
+    @page { size: 80mm auto; margin: 4mm; }
+    body {
+      font-family: "Courier New", Courier, monospace;
+      font-size: 12px;
+      width: 72mm;
+      margin: 0 auto;
+      color: #000;
+    }
+    h1 { font-size: 16px; text-align: center; margin: 0 0 4px; }
+    .muted { text-align: center; margin: 0 0 8px; }
+    hr { border: none; border-top: 1px dashed #000; }
+    table { width: 100%; border-collapse: collapse; }
+    td { padding: 2px 0; vertical-align: top; }
+    .right { text-align: right; }
+    .big { font-size: 14px; font-weight: bold; }
+    .no-print { margin: 12px 0; text-align: center; }
+    @media print { .no-print { display: none; } }
+  </style>
+</head>
+<body>
+  <div class="no-print">
+    <button onclick="window.print()">Print receipt</button>
+    <a href="{{ url_for('cashier.cashier_board') }}">Back to cashier</a>
+  </div>
+
+  <h1>PLATTER</h1>
+  <p class="muted">Restaurant receipt</p>
+  <hr>
+  <div>{{ order.order_number }}</div>
+  <div>{{ payment.received_at.strftime('%d %b %Y %H:%M') if payment.received_at else '' }}</div>
+  {% if order.table %}<div>Table {{ order.table.label }}</div>{% endif %}
+  {% if order.customer_name %}<div>{{ order.customer_name }}</div>{% endif %}
+  <hr>
+  <table>
+    {% for line in order.lines if line.status != 'void' %}
+    <tr>
+      <td>{{ line.quantity }} x {{ line.item_name }}</td>
+      <td class="right">{{ '%.2f'|format(line.line_total or 0) }}</td>
+    </tr>
+    {% endfor %}
+  </table>
+  <hr>
+  <table>
+    <tr><td>TOTAL</td><td class="right big">{{ '%.2f'|format(order.total or 0) }}</td></tr>
+    <tr><td>Paid ({{ payment.method }})</td><td class="right">{{ '%.2f'|format(payment.amount or 0) }}</td></tr>
+    {% if payment.method == 'cash' %}
+    <tr><td>Cash received</td><td class="right">{{ '%.2f'|format(payment.tendered or 0) }}</td></tr>
+    <tr><td>CHANGE</td><td class="right big">{{ '%.2f'|format(payment.change_given or 0) }}</td></tr>
+    {% endif %}
+    {% if payment.reference %}
+    <tr><td>Ref</td><td class="right">{{ payment.reference }}</td></tr>
+    {% endif %}
+  </table>
+  <hr>
+  <p class="muted">Thank you</p>
+  <script>window.addEventListener("load", function () { window.print(); });</script>
+</body>
+</html>
