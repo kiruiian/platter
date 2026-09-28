@@ -60,9 +60,17 @@
 
         <div class="mt-auto">
           {% if t.status == 'free' and session.get('role') in ['admin', 'waiter'] %}
-          <form method="POST" action="{{ url_for('orders.order_open_table', table_id=t.id) }}">
-            <button type="submit" class="btn btn-sm btn-dark w-100">Open order</button>
-          </form>
+          {% if t.status == 'free' and session.get('role') in ['admin', 'waiter'] %}
+<form method="POST" action="{{ url_for('orders.order_open_table', table_id=t.id) }}" class="mt-2">
+  <select name="party_type" class="form-select form-select-sm mb-1" required>
+    <option value="customer">Customer</option>
+    <option value="staff">Staff</option>
+    <option value="patient">Patient</option>
+  </select>
+  <input type="text" name="customer_name" class="form-control form-control-sm mb-1" placeholder="Name">
+  <button type="submit" class="btn btn-sm btn-dark w-100">Open order</button>
+</form>
+{% endif %}
           {% elif t.status == 'occupied' and session.get('role') in ['admin', 'waiter', 'cashier'] %}
           <a href="{{ url_for('orders.orders_list') }}" class="btn btn-sm btn-outline-dark w-100">View orders</a>
           {% endif %}

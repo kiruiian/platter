@@ -86,12 +86,18 @@ def order_open_table(table_id):
         flash(f"{table.label} already has an open order.", "warning")
         return redirect(url_for("orders.order_detail", order_id=existing.id))
 
+    party_type = request.form.get("party_type", "customer").strip()
+    if party_type not in {"customer", "staff", "patient"}:
+        party_type = "customer"
+
     order = MealOrder(
         order_number=next_order_number(),
         order_type="dine_in",
         status="draft",
         table_id=table.id,
         opened_by_id=session.get("user_id"),
+        party_type=party_type,
+        customer_name=request.form.get("customer_name", "").strip()[:120] or None,
     )
     table.status = "occupied"
     db.session.add(order)

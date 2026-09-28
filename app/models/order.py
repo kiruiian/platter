@@ -21,6 +21,8 @@ class MealOrder(db.Model):
     opened_by_id = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=True)
     opened_at = db.Column(db.DateTime, default=datetime.utcnow)
     closed_at = db.Column(db.DateTime)
+    party_type = db.Column(db.String(20), default="customer")
+    # customer | staff | patient
 
     # Takeaway
     customer_name = db.Column(db.String(120))

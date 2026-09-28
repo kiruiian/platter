@@ -15,6 +15,7 @@
       <div class="card-body">
         <div class="mb-2 text-muted small">
           {% if o.table %}Table {{ o.table.label }}{% else %}No table{% endif %}
+          {% if o.party_type %} · {{ o.party_type | title }}{% endif %}
           {% if o.customer_name %} · {{ o.customer_name }}{% endif %}
         </div>
         <ul class="mb-3">
@@ -24,13 +25,13 @@
         </ul>
         <div class="d-flex gap-2">
           {% if o.status == 'submitted' %}
-          <form method="POST" action="{{ url_for('order_kitchen_status', order_id=o.id) }}">
+          <form method="POST" action="{{ url_for('kitchen.order_kitchen_status', order_id=o.id) }}">
             <input type="hidden" name="status" value="in_kitchen">
             <button class="btn btn-sm btn-dark" type="submit">Start</button>
           </form>
           {% endif %}
           {% if o.status in ['submitted', 'in_kitchen'] %}
-          <form method="POST" action="{{ url_for('order_kitchen_status', order_id=o.id) }}">
+          <form method="POST" action="{{ url_for('kitchen.order_kitchen_status', order_id=o.id) }}">
             <input type="hidden" name="status" value="ready">
             <button class="btn btn-sm btn-success" type="submit">Ready</button>
           </form>

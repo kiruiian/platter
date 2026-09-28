@@ -3,7 +3,7 @@
 {% block content %}
 <div class="d-flex flex-wrap justify-content-between gap-2 mb-4">
   <div>
-    <a href="{{ url_for('orders_list') }}" class="btn btn-sm btn-outline-secondary mb-2">← Orders</a>
+    <a href="{{ url_for('orders.orders_list') }}" class="btn btn-sm btn-outline-secondary mb-2">← Orders</a>
     <h1 class="h3 brand-font mb-1">{{ order.order_number }}</h1>
     <div class="text-muted">
       {{ order.order_type.replace('_', ' ') | title }}
