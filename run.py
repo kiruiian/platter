@@ -4,9 +4,18 @@ from decimal import Decimal
 
 from dotenv import load_dotenv
 from flask import Flask, flash, redirect, render_template, request, session, url_for
-from flask_sqlalchemy import SQLAlchemy
+from app.extensions import db
 from sqlalchemy import Numeric, Text
 from werkzeug.security import check_password_hash, generate_password_hash
+from app.models import (
+    User,
+    MenuCategory,
+    MenuItem,
+    RestaurantTable,
+    MealOrder,
+    MealOrderLine,
+    Payment,
+)
 
 load_dotenv()
 
@@ -18,153 +27,13 @@ app.config["SQLALCHEMY_DATABASE_URI"] = os.environ.get(
 )
 app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
 
-db = SQLAlchemy(app)
+db.init_app(app)
 
 
-#Models 
-
-class User(db.Model):
-    __tablename__ = "users"
-
-    id = db.Column(db.Integer, primary_key=True)
-    username = db.Column(db.String(80), unique=True, nullable=False, index=True)
-    password_hash = db.Column(db.String(255), nullable=False)
-    full_name = db.Column(db.String(120), nullable=False)
-    role = db.Column(db.String(30), nullable=False, default="waiter")
-    # admin | waiter | cashier | kitchen | ward_attendant
-    active = db.Column(db.Boolean, default=True)
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
-
-    meal_orders = db.relationship("MealOrder", back_populates="opened_by", foreign_keys="MealOrder.opened_by_id")
-    payments = db.relationship("Payment", back_populates="received_by")
-
-    def set_password(self, password: str) -> None:
-        self.password_hash = generate_password_hash(password)
-
-    def check_password(self, password: str) -> bool:
-        return check_password_hash(self.password_hash, password)
 
 
-class MenuCategory(db.Model):
-    __tablename__ = "menu_categories"
-
-    id = db.Column(db.Integer, primary_key=True)
-    name = db.Column(db.String(80), unique=True, nullable=False)
-    sort_order = db.Column(db.Integer, default=0)
-    active = db.Column(db.Boolean, default=True)
-
-    items = db.relationship("MenuItem", back_populates="category", lazy="dynamic")
 
 
-class MenuItem(db.Model):
-    __tablename__ = "menu_items"
-
-    id = db.Column(db.Integer, primary_key=True)
-    category_id = db.Column(db.Integer, db.ForeignKey("menu_categories.id"), nullable=False)
-    name = db.Column(db.String(120), nullable=False)
-    description = db.Column(db.Text)
-    price = db.Column(Numeric(10, 2), nullable=False)
-    is_available = db.Column(db.Boolean, default=True)
-    # For ward later: normal, soft, diabetic, etc. (comma-separated or single tag in v1)
-    diet_tags = db.Column(db.String(120))
-    active = db.Column(db.Boolean, default=True)
-
-    category = db.relationship("MenuCategory", back_populates="items")
-    order_lines = db.relationship("MealOrderLine", back_populates="menu_item")
-
-
-class RestaurantTable(db.Model):
-    __tablename__ = "restaurant_tables"
-
-    id = db.Column(db.Integer, primary_key=True)
-    label = db.Column(db.String(30), unique=True, nullable=False)  # T1, T2
-    capacity = db.Column(db.Integer, default=4)
-    status = db.Column(db.String(20), default="free")  # free | occupied | reserved
-    active = db.Column(db.Boolean, default=True)
-
-    meal_orders = db.relationship("MealOrder", back_populates="table")
-
-
-class MealOrder(db.Model):
-    """
-    One order = one ticket for kitchen / bill.
-    order_type: dine_in | takeaway | ward
-    """
-    __tablename__ = "meal_orders"
-
-    id = db.Column(db.Integer, primary_key=True)
-    order_number = db.Column(db.String(30), unique=True, nullable=False, index=True)
-
-    order_type = db.Column(db.String(20), nullable=False, default="dine_in")
-    status = db.Column(db.String(20), nullable=False, default="draft")
-    # draft | submitted | in_kitchen | ready | delivered | closed | cancelled
-
-    table_id = db.Column(db.Integer, db.ForeignKey("restaurant_tables.id"), nullable=True)
-    opened_by_id = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=True)
-    opened_at = db.Column(db.DateTime, default=datetime.utcnow)
-    closed_at = db.Column(db.DateTime)
-
-    # Takeaway
-    customer_name = db.Column(db.String(120))
-    customer_phone = db.Column(db.String(40))
-
-    # (HMIS-ready)
-    ward_name = db.Column(db.String(80))
-    bed_label = db.Column(db.String(30))
-    external_patient_id = db.Column(db.String(60))  # HMIS id later
-    patient_name = db.Column(db.String(120))
-    diet_type = db.Column(db.String(40))  # normal | soft | diabetic | ...
-    meal_slot = db.Column(db.String(20))  # breakfast | lunch | dinner | snack
-
-    notes = db.Column(db.Text)
-    subtotal = db.Column(Numeric(10, 2), default=0)
-    tax = db.Column(Numeric(10, 2), default=0)
-    total = db.Column(Numeric(10, 2), default=0)
-
-    table = db.relationship("RestaurantTable", back_populates="meal_orders")
-    opened_by = db.relationship("User", back_populates="meal_orders", foreign_keys=[opened_by_id])
-    lines = db.relationship(
-        "MealOrderLine",
-        back_populates="meal_order",
-        cascade="all, delete-orphan",
-        order_by="MealOrderLine.id",
-    )
-    payments = db.relationship("Payment", back_populates="meal_order", cascade="all, delete-orphan")
-
-
-class MealOrderLine(db.Model):
-    __tablename__ = "meal_order_lines"
-
-    id = db.Column(db.Integer, primary_key=True)
-    meal_order_id = db.Column(db.Integer, db.ForeignKey("meal_orders.id"), nullable=False)
-    menu_item_id = db.Column(db.Integer, db.ForeignKey("menu_items.id"), nullable=True)
-
-    # Snapshots — bill stays correct if menu price changes later
-    item_name = db.Column(db.String(120), nullable=False)
-    unit_price = db.Column(Numeric(10, 2), nullable=False)
-    quantity = db.Column(db.Integer, nullable=False, default=1)
-    line_total = db.Column(Numeric(10, 2), nullable=False)
-
-    status = db.Column(db.String(20), default="queued")  # queued | preparing | done | void
-    notes = db.Column(db.String(255))
-
-    meal_order = db.relationship("MealOrder", back_populates="lines")
-    menu_item = db.relationship("MenuItem", back_populates="order_lines")
-
-
-class Payment(db.Model):
-    __tablename__ = "payments"
-
-    id = db.Column(db.Integer, primary_key=True)
-    meal_order_id = db.Column(db.Integer, db.ForeignKey("meal_orders.id"), nullable=False)
-    amount = db.Column(Numeric(10, 2), nullable=False)
-    method = db.Column(db.String(30), nullable=False)  # cash | mpesa | card | charge_to_ward
-    reference = db.Column(db.String(80))
-    received_by_id = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=True)
-    received_at = db.Column(db.DateTime, default=datetime.utcnow)
-
-    meal_order = db.relationship("MealOrder", back_populates="payments")
-    received_by = db.relationship("User", back_populates="payments")
 
 
 # Helpers
