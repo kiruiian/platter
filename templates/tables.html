@@ -6,7 +6,7 @@
     <h1 class="h3 mb-1 brand-font">Floor</h1>
     <p class="text-muted mb-0 small">Tables · open orders for waiters</p>
   </div>
-  <a href="{{ url_for('orders_list') }}" class="btn btn-outline-dark btn-sm">Orders</a>
+  <a href="{{ url_for('orders.orders_list') }}" class="btn btn-outline-dark btn-sm">Orders</a>
 </div>
 
 {% if session.get('role') == 'admin' %}
@@ -60,11 +60,11 @@
 
         <div class="mt-auto">
           {% if t.status == 'free' and session.get('role') in ['admin', 'waiter'] %}
-          <form method="POST" action="{{ url_for('order_open_table', table_id=t.id) }}">
+          <form method="POST" action="{{ url_for('orders.order_open_table', table_id=t.id) }}">
             <button type="submit" class="btn btn-sm btn-dark w-100">Open order</button>
           </form>
           {% elif t.status == 'occupied' and session.get('role') in ['admin', 'waiter', 'cashier'] %}
-          <a href="{{ url_for('orders_list') }}" class="btn btn-sm btn-outline-dark w-100">View orders</a>
+          <a href="{{ url_for('orders.orders_list') }}" class="btn btn-sm btn-outline-dark w-100">View orders</a>
           {% endif %}
         </div>
       </div>

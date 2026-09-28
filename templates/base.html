@@ -129,7 +129,7 @@
 
           {% if session.get('role') in ['admin'] %}
           <a class="nav-link" href="{{ url_for('menu.menu_list') }}">Menu</a>
-          <a class="nav-link" href="{{ url_for('users_list') }}">Users</a>
+          <a class="nav-link" href="{{ url_for('users.users_list') }}">Users</a>
           {% endif %}
 
           {% if session.get('role') in ['admin', 'waiter'] %}
@@ -138,7 +138,7 @@
           {% endif %}
 
           {% if session.get('role') in ['admin', 'kitchen'] %}
-          <a class="nav-link" href="{{ url_for('kitchen_board') }}">Kitchen</a>
+          <a class="nav-link" href="{{ url_for('kitchen.kitchen_board') }}">Kitchen</a>
           {% endif %}
 
           {% if session.get('role') in ['admin', 'cashier'] %}

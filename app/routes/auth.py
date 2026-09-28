@@ -18,7 +18,7 @@ def login_required(roles=None):
 
             if roles and session.get("role") not in roles and session.get("role") != "admin":
                 flash("Access denied for your role.", "danger")
-                return redirect(url_for("dashboard"))
+                return redirect(url_for("dashboard.dashboard"))
 
             return view(*args, **kwargs)
 
@@ -46,7 +46,7 @@ def login():
             session["full_name"] = user.full_name
 
             flash(f"Welcome, {user.full_name}!", "success")
-            return redirect(url_for("dashboard"))
+            return redirect(url_for("dashboard.dashboard"))
 
         flash("Invalid username or password.", "danger")
 
