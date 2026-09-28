@@ -1,7 +1,13 @@
 {% extends "base.html" %}
-{% block title %}Tables · Platter{% endblock %}
+{% block title %}Floor · Platter{% endblock %}
 {% block content %}
-<h1 class="h3 mb-4">Restaurant tables</h1>
+<div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-4">
+  <div>
+    <h1 class="h3 mb-1 brand-font">Floor</h1>
+    <p class="text-muted mb-0 small">Tables · open orders for waiters</p>
+  </div>
+  <a href="{{ url_for('orders_list') }}" class="btn btn-outline-dark btn-sm">Orders</a>
+</div>
 
 {% if session.get('role') == 'admin' %}
 <div class="card shadow-sm mb-4">
@@ -28,8 +34,8 @@
   {% for t in tables %}
   <div class="col-6 col-md-4 col-lg-3">
     <div class="card shadow-sm h-100">
-      <div class="card-body">
-        <div class="d-flex justify-content-between">
+      <div class="card-body d-flex flex-column">
+        <div class="d-flex justify-content-between align-items-start mb-1">
           <strong class="fs-4">{{ t.label }}</strong>
           {% if t.status == 'free' %}
           <span class="badge text-bg-success">free</span>
@@ -40,21 +46,34 @@
           {% endif %}
         </div>
         <div class="text-muted small mb-3">{{ t.capacity }} seats</div>
+
         {% if session.get('role') in ['admin', 'waiter', 'cashier'] %}
-        <form method="POST" action="{{ url_for('tables_set_status', table_id=t.id) }}" class="d-flex gap-1">
+        <form method="POST" action="{{ url_for('tables_set_status', table_id=t.id) }}" class="d-flex gap-1 mb-2">
           <select name="status" class="form-select form-select-sm">
-            <option value="free" {% if t.status=='free' %}selected{% endif %}>free</option>
-            <option value="occupied" {% if t.status=='occupied' %}selected{% endif %}>occupied</option>
-            <option value="reserved" {% if t.status=='reserved' %}selected{% endif %}>reserved</option>
+            <option value="free" {% if t.status == 'free' %}selected{% endif %}>free</option>
+            <option value="occupied" {% if t.status == 'occupied' %}selected{% endif %}>occupied</option>
+            <option value="reserved" {% if t.status == 'reserved' %}selected{% endif %}>reserved</option>
           </select>
           <button class="btn btn-sm btn-outline-dark" type="submit">Set</button>
         </form>
         {% endif %}
+
+        <div class="mt-auto">
+          {% if t.status == 'free' and session.get('role') in ['admin', 'waiter'] %}
+          <form method="POST" action="{{ url_for('order_open_table', table_id=t.id) }}">
+            <button type="submit" class="btn btn-sm btn-dark w-100">Open order</button>
+          </form>
+          {% elif t.status == 'occupied' and session.get('role') in ['admin', 'waiter', 'cashier'] %}
+          <a href="{{ url_for('orders_list') }}" class="btn btn-sm btn-outline-dark w-100">View orders</a>
+          {% endif %}
+        </div>
       </div>
     </div>
   </div>
   {% else %}
-  <p class="text-muted">No tables yet. Admin can add T1, T2…</p>
+  <div class="col-12">
+    <p class="text-muted mb-0">No tables yet. Admin can add T1, T2…</p>
+  </div>
   {% endfor %}
 </div>
 {% endblock %}

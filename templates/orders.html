@@ -1,0 +1,43 @@
+{% extends "base.html" %}
+{% block title %}Orders · Platter{% endblock %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+  <h1 class="h3 mb-0 brand-font">Open orders</h1>
+  <a href="{{ url_for('tables_list') }}" class="btn btn-outline-dark btn-sm">Floor</a>
+</div>
+
+{% if orders %}
+<div class="table-responsive card shadow-sm">
+  <table class="table mb-0 align-middle">
+    <thead>
+      <tr>
+        <th>Order</th>
+        <th>Type</th>
+        <th>Table</th>
+        <th>Status</th>
+        <th>Total</th>
+        <th>Opened</th>
+        <th></th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for o in orders %}
+      <tr>
+        <td class="fw-semibold">{{ o.order_number }}</td>
+        <td class="text-capitalize">{{ o.order_type.replace('_', ' ') }}</td>
+        <td>{{ o.table.label if o.table else '—' }}</td>
+        <td><span class="badge text-bg-secondary">{{ o.status }}</span></td>
+        <td>{{ '%.2f'|format(o.total or 0) }}</td>
+        <td class="small text-muted">{{ o.opened_at.strftime('%d %b %H:%M') if o.opened_at else '—' }}</td>
+        <td class="text-end">
+          <a class="btn btn-sm btn-outline-dark" href="{{ url_for('order_detail', order_id=o.id) }}">Open</a>
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% else %}
+<p class="text-muted">No open orders. Open one from a free table on the Floor.</p>
+{% endif %}
+{% endblock %}

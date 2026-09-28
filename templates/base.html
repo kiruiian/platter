@@ -126,8 +126,24 @@
       <div class="collapse navbar-collapse" id="navMain">
         <div class="navbar-nav me-auto">
           <a class="nav-link" href="{{ url_for('dashboard') }}">Dashboard</a>
+
+          {% if session.get('role') in ['admin'] %}
           <a class="nav-link" href="{{ url_for('menu_list') }}">Menu</a>
+          <a class="nav-link" href="{{ url_for('users_list') }}">Users</a>
+          {% endif %}
+
+          {% if session.get('role') in ['admin', 'waiter'] %}
           <a class="nav-link" href="{{ url_for('tables_list') }}">Floor</a>
+          <a class="nav-link" href="{{ url_for('orders_list') }}">Orders</a>
+          {% endif %}
+
+          {% if session.get('role') in ['admin', 'kitchen'] %}
+          <a class="nav-link" href="{{ url_for('kitchen_board') }}">Kitchen</a>
+          {% endif %}
+
+          {% if session.get('role') in ['admin', 'cashier'] %}
+          {# <a class="nav-link" href="{{ url_for('cashier_board') }}">Cashier</a> #}
+          {% endif %}
         </div>
         <div class="d-flex align-items-center gap-3">
           <div class="text-white-50 small text-end d-none d-md-block">

@@ -1,0 +1,91 @@
+{% extends "base.html" %}
+{% block title %}{{ order.order_number }} · Platter{% endblock %}
+{% block content %}
+<div class="d-flex flex-wrap justify-content-between gap-2 mb-4">
+  <div>
+    <a href="{{ url_for('orders_list') }}" class="btn btn-sm btn-outline-secondary mb-2">← Orders</a>
+    <h1 class="h3 brand-font mb-1">{{ order.order_number }}</h1>
+    <div class="text-muted">
+      {{ order.order_type.replace('_', ' ') | title }}
+      {% if order.table %} · Table <strong>{{ order.table.label }}</strong>{% endif %}
+      · <span class="badge text-bg-secondary">{{ order.status }}</span>
+    </div>
+  </div>
+  <div class="text-end">
+    <div class="text-muted small">Total</div>
+    <div class="fs-3 fw-bold">KES {{ '%.2f'|format(order.total or 0) }}</div>
+    {% if order.status == 'draft' and session.get('role') in ['admin', 'waiter', 'cashier'] %}
+    <form method="POST" action="{{ url_for('order_submit', order_id=order.id) }}" class="mt-2">
+      <button type="submit" class="btn btn-dark">Send to kitchen</button>
+    </form>
+    {% endif %}
+  </div>
+</div>
+
+<div class="row g-4">
+  <div class="col-lg-6">
+    <div class="card shadow-sm">
+      <div class="card-header fw-semibold">Order lines</div>
+      <div class="card-body p-0">
+        {% if order.lines %}
+        <table class="table mb-0">
+          <thead><tr><th>Item</th><th>Qty</th><th>Amount</th><th></th></tr></thead>
+          <tbody>
+            {% for line in order.lines %}
+            <tr class="{% if line.status == 'void' %}text-muted text-decoration-line-through{% endif %}">
+              <td>
+                {{ line.item_name }}
+                {% if line.notes %}<div class="small text-muted">{{ line.notes }}</div>{% endif %}
+              </td>
+              <td>{{ line.quantity }}</td>
+              <td>{{ '%.2f'|format(line.line_total or 0) }}</td>
+              <td class="text-end">
+                {% if line.status != 'void' and order.status not in ['closed', 'cancelled'] and session.get('role') in ['admin', 'waiter', 'cashier'] %}
+                <form method="POST" action="{{ url_for('order_void_line', order_id=order.id, line_id=line.id) }}">
+                  <button class="btn btn-sm btn-outline-danger" type="submit">Void</button>
+                </form>
+                {% endif %}
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+        {% else %}
+        <p class="text-muted p-3 mb-0">No items yet.</p>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+
+  <div class="col-lg-6">
+    <div class="card shadow-sm">
+      <div class="card-header fw-semibold">Add from menu</div>
+      <div class="card-body">
+        {% if order.status in ['closed', 'cancelled'] %}
+        <p class="text-muted mb-0">Order is closed.</p>
+        {% else %}
+          {% for c in categories %}
+          <h6 class="mt-2">{{ c.name }}</h6>
+          {% for item in c.items %}
+            {% if item.active and item.is_available %}
+            <form method="POST" action="{{ url_for('order_add_item', order_id=order.id) }}"
+                  class="d-flex align-items-center gap-2 mb-2 border-bottom pb-2">
+              <input type="hidden" name="menu_item_id" value="{{ item.id }}">
+              <div class="flex-grow-1">
+                <div class="fw-semibold">{{ item.name }}</div>
+                <div class="small text-muted">KES {{ '%.2f'|format(item.price) }}</div>
+              </div>
+              <input type="number" name="quantity" value="1" min="1" class="form-control form-control-sm" style="width:4rem">
+              <button type="submit" class="btn btn-sm btn-dark">Add</button>
+            </form>
+            {% endif %}
+          {% endfor %}
+          {% else %}
+          <p class="text-muted">No menu categories.</p>
+          {% endfor %}
+        {% endif %}
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,77 @@
+{% extends "base.html" %}
+{% block title %}Users · Platter{% endblock %}
+{% block content %}
+<h1 class="h3 brand-font mb-4">Staff users</h1>
+
+<div class="card shadow-sm mb-4">
+  <div class="card-header">Create user</div>
+  <div class="card-body">
+    <form method="POST" action="{{ url_for('users_create') }}" class="row g-2">
+      <div class="col-md-3">
+        <label class="form-label">Username</label>
+        <input type="text" name="username" class="form-control" required>
+      </div>
+      <div class="col-md-3">
+        <label class="form-label">Full name</label>
+        <input type="text" name="full_name" class="form-control" required>
+      </div>
+      <div class="col-md-2">
+        <label class="form-label">Role</label>
+        <select name="role" class="form-select" required>
+          {% for r in roles %}
+          <option value="{{ r }}">{{ r }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="col-md-2">
+        <label class="form-label">Password</label>
+        <input type="password" name="password" class="form-control" required>
+      </div>
+      <div class="col-md-2 d-flex align-items-end">
+        <button type="submit" class="btn btn-dark w-100">Create</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<div class="card shadow-sm">
+  <div class="table-responsive">
+    <table class="table mb-0 align-middle">
+      <thead>
+        <tr>
+          <th>Username</th>
+          <th>Name</th>
+          <th>Role</th>
+          <th>Status</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for u in users %}
+        <tr>
+          <td>{{ u.username }}</td>
+          <td>{{ u.full_name }}</td>
+          <td class="text-capitalize">{{ u.role }}</td>
+          <td>
+            {% if u.active %}
+            <span class="badge text-bg-success">active</span>
+            {% else %}
+            <span class="badge text-bg-secondary">inactive</span>
+            {% endif %}
+          </td>
+          <td class="text-end">
+            {% if u.id != session.get('user_id') %}
+            <form method="POST" action="{{ url_for('users_toggle', user_id=u.id) }}" class="d-inline">
+              <button class="btn btn-sm btn-outline-secondary" type="submit">
+                {{ 'Deactivate' if u.active else 'Activate' }}
+              </button>
+            </form>
+            {% endif %}
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

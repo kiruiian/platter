@@ -1,0 +1,47 @@
+{% extends "base.html" %}
+{% block title %}Kitchen · Platter{% endblock %}
+{% block content %}
+<h1 class="h3 brand-font mb-4">Kitchen</h1>
+
+{% if orders %}
+<div class="row g-3">
+  {% for o in orders %}
+  <div class="col-md-6 col-lg-4">
+    <div class="card shadow-sm h-100">
+      <div class="card-header d-flex justify-content-between">
+        <strong>{{ o.order_number }}</strong>
+        <span class="badge text-bg-secondary">{{ o.status }}</span>
+      </div>
+      <div class="card-body">
+        <div class="mb-2 text-muted small">
+          {% if o.table %}Table {{ o.table.label }}{% else %}No table{% endif %}
+          {% if o.customer_name %} · {{ o.customer_name }}{% endif %}
+        </div>
+        <ul class="mb-3">
+          {% for line in o.lines if line.status != 'void' %}
+          <li>{{ line.quantity }} × {{ line.item_name }}</li>
+          {% endfor %}
+        </ul>
+        <div class="d-flex gap-2">
+          {% if o.status == 'submitted' %}
+          <form method="POST" action="{{ url_for('order_kitchen_status', order_id=o.id) }}">
+            <input type="hidden" name="status" value="in_kitchen">
+            <button class="btn btn-sm btn-dark" type="submit">Start</button>
+          </form>
+          {% endif %}
+          {% if o.status in ['submitted', 'in_kitchen'] %}
+          <form method="POST" action="{{ url_for('order_kitchen_status', order_id=o.id) }}">
+            <input type="hidden" name="status" value="ready">
+            <button class="btn btn-sm btn-success" type="submit">Ready</button>
+          </form>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+  </div>
+  {% endfor %}
+</div>
+{% else %}
+<p class="text-muted">No tickets in the kitchen queue.</p>
+{% endif %}
+{% endblock %}
