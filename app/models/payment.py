@@ -15,6 +15,9 @@ class Payment(db.Model):
     received_at = db.Column(db.DateTime, default=datetime.utcnow)
     tendered = db.Column(Numeric(10, 2))      # cash given
     change_given = db.Column(Numeric(10, 2))  # change returned
-
     meal_order = db.relationship("MealOrder", back_populates="payments")
     received_by = db.relationship("User", back_populates="payments")
+    phone = db.Column(db.String(20))
+    mpesa_receipt = db.Column(db.String(40))
+    checkout_request_id = db.Column(db.String(80))
+    result_desc = db.Column(db.String(255))
