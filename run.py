@@ -5,6 +5,7 @@ from app.routes.tables import tables_bp
 from app.routes.menu import menu_bp
 from app.routes.cashier import cashier_bp
 from app.routes.dashboard import dashboard_bp
+from app.routes.store import store_bp
 from decimal import Decimal
 from app.routes.auth import auth_bp, login_required
 from dotenv import load_dotenv
@@ -43,6 +44,7 @@ app.register_blueprint(orders_bp)
 app.register_blueprint(kitchen_bp)
 app.register_blueprint(users_bp)
 app.register_blueprint(cashier_bp)
+app.register_blueprint(store_bp)
 
 
 

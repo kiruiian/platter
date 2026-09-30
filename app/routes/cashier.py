@@ -18,12 +18,26 @@ PAYMENT_METHODS = ("cash", "mpesa", "card", "charge_to_ward")
 @cashier_bp.route("/cashier")
 @login_required(roles={"admin", "cashier"})
 def cashier_board():
-    orders = (
+    raw = (
         MealOrder.query.filter(MealOrder.status.in_(["ready", "delivered"]))
         .order_by(MealOrder.opened_at.asc())
         .all()
     )
-    return render_template("cashier.html", orders=orders, mpesa_till=os.environ.get("MPESA_TILL", ""))
+    orders = []
+    for order in raw:
+        paid = sum(
+            float(p.amount or 0)
+            for p in order.payments
+            if (p.result_desc or "") != "pending"
+        )
+        if paid + 0.01 < float(order.total or 0):
+            orders.append(order)
+
+    return render_template(
+        "cashier.html",
+        orders=orders,
+        mpesa_till=os.environ.get("MPESA_TILL", ""),
+    )
 
 
 @cashier_bp.route("/cashier/<int:order_id>/pay", methods=["POST"])
@@ -246,3 +260,38 @@ def stk_callback():
 
     db.session.commit()
     return {"ok": True}
+
+from datetime import datetime
+from collections import defaultdict
+
+@cashier_bp.route("/reports/daily")
+@login_required(roles={"admin", "cashier"})
+def daily_report():
+    start = datetime.now().replace(hour=0, minute=0, second=0, microsecond=0)
+    payments = (
+        Payment.query.filter(Payment.received_at >= start)
+        .order_by(Payment.received_at.desc())
+        .all()
+    )
+    confirmed = [p for p in payments if (p.result_desc or "") != "pending"]
+
+    by_method = defaultdict(lambda: {"count": 0, "total": 0.0})
+    for p in confirmed:
+        key = p.method or "other"
+        by_method[key]["count"] += 1
+        by_method[key]["total"] += float(p.amount or 0)
+
+    grand = sum(v["total"] for v in by_method.values())
+    closed = MealOrder.query.filter(
+        MealOrder.status == "closed",
+        MealOrder.closed_at >= start,
+    ).count()
+
+    return render_template(
+        "reports_daily.html",
+        start=start,
+        by_method=dict(by_method),
+        grand=grand,
+        closed=closed,
+        payments=confirmed,
+    )

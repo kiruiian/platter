@@ -1,0 +1,108 @@
+{% extends "base.html" %}
+{% block title %}Store · Platter{% endblock %}
+{% block content %}
+<h1 class="h3 brand-font mb-1">Store</h1>
+<p class="text-muted mb-4">Admin receives stock. Kitchen issues what they take.</p>
+
+{% if session.get('role') == 'admin' %}
+<form method="POST" action="{{ url_for('store.store_add_item') }}" class="row g-2 align-items-end mb-4">
+  <div class="col-md-5">
+    <label class="form-label small">New item</label>
+    <input type="text" name="name" class="form-control" placeholder="Cooking oil" required>
+  </div>
+  <div class="col-md-2">
+    <label class="form-label small">Unit</label>
+    <select name="unit" class="form-select">
+      <option value="kg">kg</option>
+      <option value="g">g</option>
+      <option value="L">L</option>
+      <option value="ml">ml</option>
+      <option value="pcs">pcs</option>
+    </select>
+  </div>
+  <div class="col-md-2">
+    <button type="submit" class="btn btn-dark w-100">Add</button>
+  </div>
+</form>
+{% endif %}
+
+<div class="card shadow-sm mb-4">
+  <div class="table-responsive">
+    <table class="table align-middle mb-0">
+      <thead>
+        <tr>
+          <th>Item</th>
+          <th>On hand</th>
+          {% if session.get('role') == 'admin' %}
+          <th>Receive</th>
+          {% endif %}
+          <th>Issue to kitchen</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for item in items %}
+        <tr>
+          <td>{{ item.name }}</td>
+          <td>
+            <strong>{{ '%.2f'|format(item.quantity_on_hand or 0) }}</strong>
+            <span class="text-muted">{{ item.unit }}</span>
+          </td>
+          {% if session.get('role') == 'admin' %}
+          <td>
+            <form method="POST" action="{{ url_for('store.store_receive', item_id=item.id) }}" class="d-flex gap-1">
+              <input type="number" step="0.01" min="0.01" name="quantity" class="form-control form-control-sm" style="width:5.5rem" placeholder="Qty" required>
+              <input type="text" name="reference" class="form-control form-control-sm" style="width:8rem" placeholder="Note">
+              <button class="btn btn-sm btn-outline-dark" type="submit">In</button>
+            </form>
+          </td>
+          {% endif %}
+          <td>
+            <form method="POST" action="{{ url_for('store.store_issue', item_id=item.id) }}" class="d-flex gap-1">
+              <input type="number" step="0.01" min="0.01" name="quantity" class="form-control form-control-sm" style="width:5.5rem" placeholder="Qty" required>
+              <input type="text" name="reference" class="form-control form-control-sm" style="width:8rem" placeholder="For…">
+              <button class="btn btn-sm btn-dark" type="submit">Out</button>
+            </form>
+          </td>
+        </tr>
+        {% endfor %}
+        {% if not items %}
+        <tr><td colspan="4" class="text-muted">No items yet.</td></tr>
+        {% endif %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<div class="card shadow-sm">
+  <div class="card-header">Recent movements</div>
+  <div class="table-responsive">
+    <table class="table table-sm mb-0">
+      <thead>
+        <tr>
+          <th>Time</th>
+          <th>Item</th>
+          <th>Type</th>
+          <th>Qty</th>
+          <th>By</th>
+          <th>Note</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for m in movements %}
+        <tr>
+          <td>{{ m.recorded_at.strftime('%d %b %H:%M') if m.recorded_at else '—' }}</td>
+          <td>{{ m.item.name if m.item else '—' }}</td>
+          <td>{{ m.movement_type }}</td>
+          <td>{{ '%.2f'|format(m.quantity or 0) }}</td>
+          <td>{% if m.recorded_by %}{{ m.recorded_by.full_name or m.recorded_by.username }}{% else %}—{% endif %}</td>
+          <td class="small">{{ m.reference or '—' }}</td>
+        </tr>
+        {% endfor %}
+        {% if not movements %}
+        <tr><td colspan="6" class="text-muted">No movements yet.</td></tr>
+        {% endif %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}
