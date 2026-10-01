@@ -53,7 +53,11 @@ def cashier_pay(order_id):
         flash("Choose a valid payment method.", "danger")
         return redirect(url_for("cashier.cashier_board"))
 
-    already_paid = sum(float(p.amount or 0) for p in order.payments)
+    already_paid = sum(
+        float(p.amount or 0)
+        for p in order.payments
+        if (p.result_desc or "") != "pending"
+    )
     due = round(float(order.total or 0) - already_paid, 2)
     if due <= 0:
         flash("Order is already fully paid.", "warning")
@@ -103,7 +107,14 @@ def cashier_pay(order_id):
         order.status = "closed"
         order.closed_at = datetime.utcnow()
         if order.table:
-            order.table.status = "free"
+            still_open = MealOrder.query.filter(
+                MealOrder.table_id == order.table_id,
+                MealOrder.id != order.id,
+                MealOrder.status.in_(
+                    ["draft", "submitted", "in_kitchen", "ready", "delivered"]
+                ),
+            ).first()
+            order.table.status = "occupied" if still_open else "free"
 
     db.session.commit()
 
@@ -116,7 +127,6 @@ def cashier_pay(order_id):
         flash("Payment recorded.", "success")
 
     return redirect(url_for("cashier.receipt", payment_id=payment.id))
-
 
 @cashier_bp.route("/cashier/receipts/<int:payment_id>")
 @login_required(roles={"admin", "cashier"})
@@ -264,12 +274,25 @@ def stk_callback():
 from datetime import datetime
 from collections import defaultdict
 
+from datetime import datetime, timedelta
+
 @cashier_bp.route("/reports/daily")
 @login_required(roles={"admin", "cashier"})
 def daily_report():
-    start = datetime.now().replace(hour=0, minute=0, second=0, microsecond=0)
+    raw = request.args.get("date", "").strip()
+    try:
+        day = datetime.strptime(raw, "%Y-%m-%d").date()
+    except ValueError:
+        day = datetime.now().date()
+
+    start = datetime.combine(day, datetime.min.time())
+    end = start + timedelta(days=1)
+
     payments = (
-        Payment.query.filter(Payment.received_at >= start)
+        Payment.query.filter(
+            Payment.received_at >= start,
+            Payment.received_at < end,
+        )
         .order_by(Payment.received_at.desc())
         .all()
     )
@@ -285,11 +308,13 @@ def daily_report():
     closed = MealOrder.query.filter(
         MealOrder.status == "closed",
         MealOrder.closed_at >= start,
+        MealOrder.closed_at < end,
     ).count()
 
     return render_template(
         "reports_daily.html",
         start=start,
+        day=day,
         by_method=dict(by_method),
         grand=grand,
         closed=closed,

@@ -62,7 +62,11 @@ def orders_list():
         .limit(50)
         .all()
     )
-    return render_template("orders.html", orders=orders)
+    ready_count = MealOrder.query.filter_by(status="ready").count()
+    return render_template(
+        "orders.html",
+        orders=orders,
+        ready_count=ready_count,)
 
 @orders_bp.route("/orders/open/<int:table_id>", methods=["POST"])
 @login_required(roles={"admin", "waiter", "cashier"})
@@ -71,20 +75,6 @@ def order_open_table(table_id):
     if not table.active:
         flash("Table is inactive.", "danger")
         return redirect(url_for("tables.tables_list"))
-
-    existing = (
-        MealOrder.query.filter(
-            MealOrder.table_id == table.id,
-            MealOrder.status.in_(
-                ["draft", "submitted", "in_kitchen", "ready", "delivered"]
-            ),
-        )
-        .order_by(MealOrder.id.desc())
-        .first()
-    )
-    if existing:
-        flash(f"{table.label} already has an open order.", "warning")
-        return redirect(url_for("orders.order_detail", order_id=existing.id))
 
     party_type = request.form.get("party_type", "customer").strip()
     if party_type not in {"customer", "staff", "patient"}:
@@ -177,4 +167,16 @@ def order_void_line(order_id, line_id):
     recalculate_order_totals(order)
     db.session.commit()
     flash(f"Voided {line.item_name}.", "success")
+    return redirect(url_for("orders.order_detail", order_id=order.id))
+
+@orders_bp.route("/orders/<int:order_id>/served", methods=["POST"])
+@login_required(roles={"admin", "waiter"})
+def order_mark_served(order_id):
+    order = MealOrder.query.get_or_404(order_id)
+    if order.status != "ready":
+        flash("Only ready orders can be marked served.", "warning")
+        return redirect(url_for("orders.order_detail", order_id=order.id))
+    order.status = "delivered"
+    db.session.commit()
+    flash(f"{order.order_number} marked served. Cashier can bill.", "success")
     return redirect(url_for("orders.order_detail", order_id=order.id))

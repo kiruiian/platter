@@ -59,8 +59,7 @@
         {% endif %}
 
         <div class="mt-auto">
-          {% if t.status == 'free' and session.get('role') in ['admin', 'waiter'] %}
-          {% if t.status == 'free' and session.get('role') in ['admin', 'waiter'] %}
+{% if session.get('role') in ['admin', 'waiter', 'cashier'] %}
 <form method="POST" action="{{ url_for('orders.order_open_table', table_id=t.id) }}" class="mt-2">
   <select name="party_type" class="form-select form-select-sm mb-1" required>
     <option value="customer">Customer</option>
