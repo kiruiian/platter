@@ -1,4 +1,5 @@
-from datetime import datetime
+from collections import defaultdict
+from datetime import datetime, timedelta
 from decimal import Decimal
 import os
 import base64
@@ -271,11 +272,6 @@ def stk_callback():
     db.session.commit()
     return {"ok": True}
 
-from datetime import datetime
-from collections import defaultdict
-
-from datetime import datetime, timedelta
-
 @cashier_bp.route("/reports/daily")
 @login_required(roles={"admin", "cashier"})
 def daily_report():
@@ -315,6 +311,54 @@ def daily_report():
         "reports_daily.html",
         start=start,
         day=day,
+        by_method=dict(by_method),
+        grand=grand,
+        closed=closed,
+        payments=confirmed,
+    )
+
+
+@cashier_bp.route("/reports/monthly")
+@login_required(roles={"admin", "cashier"})
+def monthly_report():
+    raw = request.args.get("month", "").strip()
+    try:
+        month = datetime.strptime(raw, "%Y-%m").date().replace(day=1)
+    except ValueError:
+        today = datetime.now().date()
+        month = today.replace(day=1)
+
+    start = datetime.combine(month, datetime.min.time())
+    next_month = month.month % 12 + 1
+    next_year = month.year + (month.month // 12)
+    end = datetime(next_year, next_month, 1)
+
+    payments = (
+        Payment.query.filter(
+            Payment.received_at >= start,
+            Payment.received_at < end,
+        )
+        .order_by(Payment.received_at.desc())
+        .all()
+    )
+    confirmed = [p for p in payments if (p.result_desc or "") != "pending"]
+
+    by_method = defaultdict(lambda: {"count": 0, "total": 0.0})
+    for payment in confirmed:
+        key = payment.method or "other"
+        by_method[key]["count"] += 1
+        by_method[key]["total"] += float(payment.amount or 0)
+
+    grand = sum(row["total"] for row in by_method.values())
+    closed = MealOrder.query.filter(
+        MealOrder.status == "closed",
+        MealOrder.closed_at >= start,
+        MealOrder.closed_at < end,
+    ).count()
+
+    return render_template(
+        "reports_monthly.html",
+        month=month,
         by_method=dict(by_method),
         grand=grand,
         closed=closed,

@@ -1,43 +1,57 @@
 {% extends "base.html" %}
 {% block title %}Orders · Platter{% endblock %}
 {% block content %}
-<div class="d-flex justify-content-between align-items-center mb-4">
-  <h1 class="h3 mb-0 brand-font">Open orders</h1>
-  <a href="{{ url_for('tables.tables_list') }}" class="btn btn-outline-dark btn-sm">Floor</a>
+<div class="page-hero d-flex flex-column flex-md-row justify-content-between align-items-md-end gap-3 mb-4">
+  <div>
+    <span class="eyebrow">Service desk</span>
+    <h1>Open orders</h1>
+    <p>Live order flow for the floor, kitchen, and cashier.</p>
+  </div>
+  <a href="{{ url_for('tables.tables_list') }}" class="btn btn-outline-light btn-sm rounded-pill px-3">View floor</a>
 </div>
 
+{% if ready_count %}
+<div class="alert alert-warning border-0 shadow-sm mb-4 rounded-4">
+  <strong>{{ ready_count }}</strong> order(s) ready to serve.
+</div>
+{% endif %}
+
 {% if orders %}
-<div class="table-responsive card shadow-sm">
-  <table class="table mb-0 align-middle">
-    <thead>
-      <tr>
-        <th>Order</th>
-        <th>Type</th>
-        <th>Table</th>
-        <th>Status</th>
-        <th>Total</th>
-        <th>Opened</th>
-        <th></th>
-      </tr>
-    </thead>
-    <tbody>
-      {% for o in orders %}
-      <tr>
-        <td class="fw-semibold">{{ o.order_number }}</td>
-        <td class="text-capitalize">{{ o.order_type.replace('_', ' ') }}</td>
-        <td>{{ o.table.label if o.table else '—' }}</td>
-        <td><span class="badge text-bg-secondary">{{ o.status }}</span></td>
-        <td>{{ '%.2f'|format(o.total or 0) }}</td>
-        <td class="small text-muted">{{ o.opened_at.strftime('%d %b %H:%M') if o.opened_at else '—' }}</td>
-        <td class="text-end">
-          <a class="btn btn-sm btn-outline-dark" href="{{ url_for('orders.order_detail', order_id=o.id) }}">Open</a>
-        </td>
-      </tr>
-      {% endfor %}
-    </tbody>
-  </table>
+<div class="card-platter overflow-hidden">
+  <div class="table-responsive">
+    <table class="table table-hover align-middle mb-0">
+      <thead class="table-light">
+        <tr>
+          <th>Order</th>
+          <th>Type</th>
+          <th>Table</th>
+          <th>Status</th>
+          <th>Total</th>
+          <th>Opened</th>
+          <th class="text-end">Action</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for o in orders %}
+        <tr class="{% if o.status == 'ready' %}table-warning{% elif o.status == 'delivered' %}table-success{% endif %}">
+          <td class="fw-semibold">{{ o.order_number }}</td>
+          <td class="text-capitalize">{{ o.order_type.replace('_', ' ') }}</td>
+          <td>{{ o.table.label if o.table else '—' }}</td>
+          <td><span class="badge rounded-pill bg-secondary-subtle text-secondary-emphasis px-2 py-2 text-capitalize">{{ o.status }}</span></td>
+          <td>{{ '%.2f'|format(o.total or 0) }}</td>
+          <td class="small text-muted">{{ o.opened_at.strftime('%d %b %H:%M') if o.opened_at else '—' }}</td>
+          <td class="text-end">
+            <a class="btn btn-sm btn-outline-dark rounded-pill px-3" href="{{ url_for('orders.order_detail', order_id=o.id) }}">Open</a>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
 </div>
 {% else %}
-<p class="text-muted">No open orders. Open one from a free table on the Floor.</p>
+<div class="text-center text-muted py-5 border rounded-4 border-dashed bg-white/50">
+  No open orders. Open one from a free table on the Floor.
+</div>
 {% endif %}
 {% endblock %}

@@ -1,70 +1,152 @@
 {% extends "base.html" %}
 {% block title %}Sign in · Platter{% endblock %}
+{% block body_class %}login-page{% endblock %}
+{% block main_class %}login-main{% endblock %}
 {% block extra_css %}
 <style>
-  body { background: #1c1917 !important; }
+  .login-page {
+    background:
+      radial-gradient(ellipse at 12% 12%, rgba(194,65,12,0.28), transparent 42%),
+      radial-gradient(ellipse at 88% 88%, rgba(15,118,110,0.2), transparent 42%),
+      #1c1917;
+  }
+  .login-main {
+    width: 100%;
+    max-width: none;
+    margin: 0;
+    padding: 0;
+  }
   .login-wrap {
     min-height: 100vh;
-    display: flex;
+    display: grid;
+    grid-template-columns: minmax(0, 1.1fr) minmax(340px, 0.9fr);
+    align-items: center;
+    gap: clamp(2rem, 7vw, 7rem);
+    width: min(1120px, 100%);
+    margin: 0 auto;
+    padding: clamp(1.5rem, 5vw, 4rem);
+    color: #fff;
+  }
+  .login-story {
+    max-width: 540px;
+  }
+  .login-mark {
+    display: inline-flex;
     align-items: center;
     justify-content: center;
-    padding: 1.5rem;
-    background:
-      radial-gradient(ellipse at 20% 20%, rgba(194,65,12,0.35), transparent 50%),
-      radial-gradient(ellipse at 80% 80%, rgba(15,118,110,0.25), transparent 45%),
-      #1c1917;
+    width: 58px;
+    height: 58px;
+    border: 1px solid rgba(255,255,255,0.16);
+    border-radius: 18px;
+    background: rgba(255,255,255,0.08);
+    font-size: 1.7rem;
+    margin-bottom: 1.5rem;
+  }
+  .login-story h1 {
+    font-family: "Playfair Display", Georgia, serif;
+    font-size: clamp(3rem, 7vw, 5.7rem);
+    line-height: 0.98;
+    letter-spacing: -0.05em;
+    margin: 0 0 1.25rem;
+  }
+  .login-story p {
+    max-width: 420px;
+    color: rgba(255,255,255,0.68);
+    font-size: 1.1rem;
+    line-height: 1.7;
+  }
+  .login-note {
+    display: flex;
+    align-items: center;
+    gap: 0.7rem;
+    margin-top: 2rem;
+    color: rgba(255,255,255,0.58);
+    font-size: 0.9rem;
+  }
+  .login-note::before {
+    content: "";
+    width: 0.55rem;
+    height: 0.55rem;
+    border-radius: 50%;
+    background: #34d399;
+    box-shadow: 0 0 0 0.25rem rgba(52,211,153,0.12);
   }
   .login-card {
     width: 100%;
-    max-width: 420px;
+    max-width: 440px;
+    justify-self: end;
     background: #fffaf5;
+    color: #1c1917;
+    border: 1px solid rgba(255,255,255,0.5);
     border-radius: 1.5rem;
-    padding: 2.25rem;
-    box-shadow: 0 30px 80px rgba(0,0,0,0.35);
+    padding: clamp(1.5rem, 4vw, 2.5rem);
+    box-shadow: 0 30px 80px rgba(0,0,0,0.32);
   }
-  .login-card h1 {
+  .login-card h2 {
     font-family: "Playfair Display", Georgia, serif;
     font-weight: 700;
-    font-size: 2rem;
-    margin-bottom: 0.25rem;
+    font-size: 1.8rem;
+    margin-bottom: 0.35rem;
   }
   .login-card .form-control {
     border-radius: 0.75rem;
-    padding: 0.7rem 0.9rem;
+    padding: 0.75rem 0.9rem;
     border-color: #e7e5e4;
   }
   .login-card .form-control:focus {
     border-color: #fb923c;
     box-shadow: 0 0 0 0.2rem rgba(194, 65, 12, 0.15);
   }
+  @media (max-width: 767.98px) {
+    .login-wrap {
+      grid-template-columns: 1fr;
+      gap: 1.5rem;
+      max-width: 520px;
+    }
+    .login-story {
+      text-align: center;
+      margin: 0 auto;
+    }
+    .login-mark { margin-bottom: 0.75rem; }
+    .login-story h1 { font-size: 3.4rem; }
+    .login-story p { font-size: 0.95rem; margin: 0 auto; }
+    .login-note { display: none; }
+    .login-card { justify-self: center; }
+  }
 </style>
 {% endblock %}
 {% block content %}
-</main>
 <div class="login-wrap">
-  <div class="login-card">
-    <div class="text-center mb-4">
-      <div class="mb-2" style="font-size:2rem">🍽️</div>
-      <h1>Platter</h1>
-      <p class="text-muted mb-0">Restaurant </p>
+  <section class="login-story" aria-label="Welcome to Platter">
+    <div class="login-mark" aria-hidden="true">🍽️</div>
+    <h1>Good service<br>starts here.</h1>
+    <p>A thoughtful workspace for your team to welcome guests, move orders, and keep every service running smoothly.</p>
+    <div class="login-note">Restaurant operations, all in one place</div>
+  </section>
+
+  <section class="login-card" aria-labelledby="login-heading">
+    <div class="mb-4">
+      <div class="small text-uppercase fw-bold text-muted mb-2" style="letter-spacing:.1em">Welcome back</div>
+      <h2 id="login-heading">Sign in to Platter</h2>
+      <p class="text-muted mb-0">Use your staff account to continue.</p>
     </div>
     {% with messages = get_flashed_messages(with_categories=true) %}
       {% for category, message in messages %}
-      <div class="alert alert-{{ category }} py-2">{{ message }}</div>
+      <div class="alert alert-{{ category }} py-2" role="alert">{{ message }}</div>
       {% endfor %}
     {% endwith %}
     <form method="POST">
       <div class="mb-3">
-        <label class="form-label fw-semibold">Username</label>
-        <input type="text" name="username" class="form-control" required autofocus placeholder="admin">
+        <label class="form-label fw-semibold" for="username">Username</label>
+        <input id="username" type="text" name="username" class="form-control" required autofocus autocomplete="username" placeholder="Your username">
       </div>
       <div class="mb-4">
-        <label class="form-label fw-semibold">Password</label>
-        <input type="password" name="password" class="form-control" required placeholder="••••••••">
+        <label class="form-label fw-semibold" for="password">Password</label>
+        <input id="password" type="password" name="password" class="form-control" required autocomplete="current-password" placeholder="Your password">
       </div>
-      <button type="submit" class="btn btn-platter w-100 py-2 rounded-pill">Sign In</button>
+      <button type="submit" class="btn btn-platter w-100 py-2 rounded-pill">Sign in</button>
     </form>
-  </div>
+    <div class="small text-muted text-center mt-4">Need access? Ask your administrator.</div>
+  </section>
 </div>
-<main class="d-none">
 {% endblock %}

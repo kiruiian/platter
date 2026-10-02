@@ -1,79 +1,107 @@
 {% extends "base.html" %}
 {% block title %}Cashier · Platter{% endblock %}
 {% block content %}
-<h1 class="h3 brand-font mb-4">Cashier</h1>
-<p class="text-muted">Ready / served orders. Cash, M-Pesa prompt, or till code.</p>
+<div class="page-hero d-flex flex-column flex-md-row justify-content-between align-items-md-end gap-3 mb-4">
+  <div>
+    <span class="eyebrow">Payments &amp; checkout</span>
+    <h1>Cashier</h1>
+    <p>Settle ready orders with cash or M-Pesa.</p>
+  </div>
+  <a href="{{ url_for('cashier.daily_report') }}" class="btn btn-outline-light btn-sm rounded-pill px-3">View daily report</a>
+</div>
 
 {% if orders %}
 <div class="row g-3">
   {% for o in orders %}
   {% set paid = namespace(v=0) %}
-  {% for p in o.payments %}{% set paid.v = paid.v + (p.amount or 0) %}{% endfor %}
+  {% for p in o.payments %}{% if (p.result_desc or '') != 'pending' %}{% set paid.v = paid.v + (p.amount or 0) %}{% endif %}{% endfor %}
   {% set balance = (o.total or 0) - paid.v %}
-  <div class="col-md-6">
-    <div class="card shadow-sm h-100">
-      <div class="card-header d-flex justify-content-between">
-        <strong>{{ o.order_number }}</strong>
-        <span class="badge text-bg-secondary">{{ o.status }}</span>
-      </div>
-      <div class="card-body">
-        <div class="small text-muted mb-2">
-          {% if o.table %}Table {{ o.table.label }}{% else %}No table{% endif %}
-          {% if o.party_type %} · {{ o.party_type | title }}{% endif %}
-          {% if o.customer_name %} · {{ o.customer_name }}{% endif %}
+  <div class="col-xl-6">
+    <section class="card-platter h-100 overflow-hidden">
+      <header class="d-flex justify-content-between align-items-start gap-3 px-4 py-3 border-bottom">
+        <div>
+          <div class="small text-muted text-uppercase fw-semibold">Order</div>
+          <h2 class="h5 mb-0 mt-1">{{ o.order_number }}</h2>
         </div>
-        <ul class="small">
-          {% for line in o.lines if line.status != 'void' %}
-          <li>{{ line.quantity }} × {{ line.item_name }} — {{ '%.2f'|format(line.line_total or 0) }}</li>
-          {% endfor %}
-        </ul>
-        <div class="mb-1"><strong>Total:</strong> KES {{ '%.2f'|format(o.total or 0) }}</div>
-        <div class="mb-3"><strong>Balance:</strong> KES {{ '%.2f'|format(balance) }}</div>
+        <span class="badge rounded-pill bg-success-subtle text-success-emphasis px-3 py-2 text-capitalize">{{ o.status }}</span>
+      </header>
+      <div class="card-body p-4">
+        <div class="d-flex flex-wrap gap-2 small text-muted mb-3">
+          <span class="badge rounded-pill bg-light text-dark border">{{ 'Table ' ~ o.table.label if o.table else 'No table' }}</span>
+          {% if o.party_type %}<span class="badge rounded-pill bg-light text-dark border">{{ o.party_type | title }}</span>{% endif %}
+          {% if o.customer_name %}<span class="badge rounded-pill bg-light text-dark border">{{ o.customer_name }}</span>{% endif %}
+        </div>
 
-        <h6 class="mb-2">Cash</h6>
-        <form method="POST" action="{{ url_for('cashier.cashier_pay', order_id=o.id) }}" class="row g-2 cash-form mb-3">
-          <input type="hidden" name="method" value="cash">
-          <div class="col-6">
-            <label class="form-label small">Cash received</label>
-            <input type="number" step="0.01" min="0" name="tendered" class="form-control form-control-sm tendered-input" placeholder="e.g. 1000">
-          </div>
-          <div class="col-6 d-flex align-items-end">
-            <button type="submit" class="btn btn-dark btn-sm w-100">Take cash</button>
-          </div>
-          <div class="col-12 small" data-due="{{ '%.2f'|format(balance) }}">
-            Change: <strong class="change-out">KES 0.00</strong>
-          </div>
-        </form>
+        <div class="rounded-4 bg-light p-3 mb-3">
+          <div class="small text-muted fw-semibold text-uppercase mb-2">Items</div>
+          <ul class="list-unstyled mb-0 small">
+            {% for line in o.lines if line.status != 'void' %}
+            <li class="d-flex justify-content-between gap-3 py-1">
+              <span>{{ line.quantity }} × {{ line.item_name }}</span>
+              <span class="text-nowrap">{{ '%.2f'|format(line.line_total or 0) }}</span>
+            </li>
+            {% endfor %}
+          </ul>
+        </div>
 
-        <h6 class="mb-1">M-Pesa</h6>
-        <div class="small text-muted mb-2">Till {{ mpesa_till or '—' }} — or send a prompt</div>
+        <div class="d-flex justify-content-between small mb-1">
+          <span class="text-muted">Order total</span>
+          <span>KES {{ '%.2f'|format(o.total or 0) }}</span>
+        </div>
+        <div class="d-flex justify-content-between align-items-center mb-4">
+          <span class="fw-semibold">Balance due</span>
+          <span class="h4 mb-0 text-danger">KES {{ '%.2f'|format(balance) }}</span>
+        </div>
 
-        <form method="POST" action="{{ url_for('cashier.stk_push', order_id=o.id) }}" class="row g-2 mb-2">
-          <div class="col-8">
-            <input type="tel" name="phone" class="form-control form-control-sm" placeholder="07XXXXXXXX" required>
+        <div class="row g-3">
+          <div class="col-md-6">
+            <div class="h-100 rounded-4 border p-3">
+              <h3 class="h6 fw-bold mb-3">Cash payment</h3>
+              <form method="POST" action="{{ url_for('cashier.cashier_pay', order_id=o.id) }}" class="cash-form">
+                <input type="hidden" name="method" value="cash">
+                <label class="form-label small" for="tendered-{{ o.id }}">Cash received</label>
+                <input id="tendered-{{ o.id }}" type="number" step="0.01" min="0" name="tendered" class="form-control tendered-input mb-2" placeholder="e.g. 1000">
+                <div class="small mb-3" data-due="{{ '%.2f'|format(balance) }}">
+                  Change: <strong class="change-out">KES 0.00</strong>
+                </div>
+                <button type="submit" class="btn btn-dark w-100">Take cash</button>
+              </form>
+            </div>
           </div>
-          <div class="col-4">
-            <button class="btn btn-success btn-sm w-100" type="submit">Send prompt</button>
+          <div class="col-md-6">
+            <div class="h-100 rounded-4 border p-3">
+              <h3 class="h6 fw-bold mb-1">M-Pesa</h3>
+              <p class="small text-muted mb-3">Till {{ mpesa_till or '—' }} · send a prompt or record a till payment.</p>
+              <form method="POST" action="{{ url_for('cashier.stk_push', order_id=o.id) }}" class="mb-3">
+                <label class="form-label small" for="phone-{{ o.id }}">Guest phone</label>
+                <div class="input-group">
+                  <input id="phone-{{ o.id }}" type="tel" name="phone" class="form-control" placeholder="07XXXXXXXX" required>
+                  <button class="btn btn-success" type="submit">Prompt</button>
+                </div>
+              </form>
+              <form method="POST" action="{{ url_for('cashier.cashier_pay', order_id=o.id) }}">
+                <input type="hidden" name="method" value="mpesa">
+                <input type="hidden" name="amount" value="{{ '%.2f'|format(balance) }}">
+                <label class="form-label small" for="reference-{{ o.id }}">Till confirmation code</label>
+                <div class="input-group">
+                  <input id="reference-{{ o.id }}" type="text" name="reference" class="form-control" placeholder="e.g. QGH..." required>
+                  <button class="btn btn-outline-dark" type="submit">Record</button>
+                </div>
+              </form>
+            </div>
           </div>
-        </form>
-
-        <form method="POST" action="{{ url_for('cashier.cashier_pay', order_id=o.id) }}" class="row g-2">
-          <input type="hidden" name="method" value="mpesa">
-          <input type="hidden" name="amount" value="{{ '%.2f'|format(balance) }}">
-          <div class="col-8">
-            <input type="text" name="reference" class="form-control form-control-sm" placeholder="Till confirmation code" required>
-          </div>
-          <div class="col-4">
-            <button class="btn btn-outline-dark btn-sm w-100" type="submit">Till paid</button>
-          </div>
-        </form>
+        </div>
       </div>
-    </div>
+    </section>
   </div>
   {% endfor %}
 </div>
 {% else %}
-<p class="text-muted">No bills waiting. Kitchen must mark an order ready first.</p>
+<div class="text-center text-muted py-5 border rounded-4 bg-white">
+  <div class="fs-1 mb-2">✓</div>
+  <h2 class="h5 text-dark">All caught up</h2>
+  <p class="mb-0">No bills are waiting. Orders appear here when they are ready or served.</p>
+</div>
 {% endif %}
 
 <script>

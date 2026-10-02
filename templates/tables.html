@@ -1,29 +1,30 @@
 {% extends "base.html" %}
-{% block title %}Floor · Platter{% endblock %}
+{% block title %}Tables · Platter{% endblock %}
 {% block content %}
-<div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-4">
+<div class="page-hero d-flex flex-column flex-md-row justify-content-between align-items-md-end gap-3 mb-4">
   <div>
-    <h1 class="h3 mb-1 brand-font">Floor</h1>
-    <p class="text-muted mb-0 small">Tables · open orders for waiters</p>
+    <span class="eyebrow">Floor management</span>
+    <h1>Restaurant tables</h1>
+    <p>Keep seat availability and guest flow visible in real time.</p>
   </div>
-  <a href="{{ url_for('orders.orders_list') }}" class="btn btn-outline-dark btn-sm">Orders</a>
+  <div class="status-pill">{{ tables|length }} active</div>
 </div>
 
 {% if session.get('role') == 'admin' %}
-<div class="card shadow-sm mb-4">
-  <div class="card-header">Add table</div>
-  <div class="card-body">
-    <form method="POST" action="{{ url_for('tables.tables_create') }}" class="row g-2 align-items-end">
-      <div class="col-md-3">
-        <label class="form-label">Label</label>
+<div class="card-platter mb-4">
+  <div class="card-header border-0 bg-transparent px-4 py-3 fw-semibold">Add table</div>
+  <div class="card-body px-4 pb-4">
+    <form method="POST" action="{{ url_for('tables.tables_create') }}" class="row g-3 align-items-end">
+      <div class="col-md-4">
+        <label class="form-label small fw-semibold text-uppercase text-muted">Label</label>
         <input type="text" name="label" class="form-control" placeholder="T1" required>
       </div>
-      <div class="col-md-3">
-        <label class="form-label">Capacity</label>
+      <div class="col-md-4">
+        <label class="form-label small fw-semibold text-uppercase text-muted">Capacity</label>
         <input type="number" name="capacity" class="form-control" value="4" min="1">
       </div>
-      <div class="col-md-3">
-        <button type="submit" class="btn btn-dark">Add</button>
+      <div class="col-md-4">
+        <button type="submit" class="btn btn-platter w-100">Add table</button>
       </div>
     </form>
   </div>
@@ -33,53 +34,39 @@
 <div class="row g-3">
   {% for t in tables %}
   <div class="col-6 col-md-4 col-lg-3">
-    <div class="card shadow-sm h-100">
-      <div class="card-body d-flex flex-column">
-        <div class="d-flex justify-content-between align-items-start mb-1">
-          <strong class="fs-4">{{ t.label }}</strong>
+    <div class="card-platter h-100">
+      <div class="card-body p-3">
+        <div class="d-flex justify-content-between align-items-start mb-2">
+          <div class="brand-font fs-3 mb-0">{{ t.label }}</div>
           {% if t.status == 'free' %}
-          <span class="badge text-bg-success">free</span>
+          <span class="badge rounded-pill bg-success-subtle text-success-emphasis px-2 py-2">free</span>
           {% elif t.status == 'occupied' %}
-          <span class="badge text-bg-danger">occupied</span>
+          <span class="badge rounded-pill bg-danger-subtle text-danger-emphasis px-2 py-2">busy</span>
           {% else %}
-          <span class="badge text-bg-warning text-dark">reserved</span>
+          <span class="badge rounded-pill bg-warning-subtle text-warning-emphasis px-2 py-2">{{ t.status }}</span>
           {% endif %}
         </div>
         <div class="text-muted small mb-3">{{ t.capacity }} seats</div>
 
         {% if session.get('role') in ['admin', 'waiter', 'cashier'] %}
-        <form method="POST" action="{{ url_for('tables.tables_set_status', table_id=t.id) }}" class="d-flex gap-1 mb-2">
-          <select name="status" class="form-select form-select-sm">
-            <option value="free" {% if t.status == 'free' %}selected{% endif %}>free</option>
-            <option value="occupied" {% if t.status == 'occupied' %}selected{% endif %}>occupied</option>
-            <option value="reserved" {% if t.status == 'reserved' %}selected{% endif %}>reserved</option>
+        <form method="POST" action="{{ url_for('orders.order_open_table', table_id=t.id) }}" class="mt-2">
+          <select name="party_type" class="form-select form-select-sm mb-2" required>
+            <option value="customer">Customer</option>
+            <option value="staff">Staff</option>
+            <option value="patient">Patient</option>
           </select>
-          <button class="btn btn-sm btn-outline-dark" type="submit">Set</button>
+          <input type="text" name="customer_name" class="form-control form-control-sm mb-2" placeholder="Guest name">
+          <button type="submit" class="btn btn-dark btn-sm w-100">Open order</button>
         </form>
         {% endif %}
-
-        <div class="mt-auto">
-{% if session.get('role') in ['admin', 'waiter', 'cashier'] %}
-<form method="POST" action="{{ url_for('orders.order_open_table', table_id=t.id) }}" class="mt-2">
-  <select name="party_type" class="form-select form-select-sm mb-1" required>
-    <option value="customer">Customer</option>
-    <option value="staff">Staff</option>
-    <option value="patient">Patient</option>
-  </select>
-  <input type="text" name="customer_name" class="form-control form-control-sm mb-1" placeholder="Name">
-  <button type="submit" class="btn btn-sm btn-dark w-100">Open order</button>
-</form>
-{% endif %}
-          {% elif t.status == 'occupied' and session.get('role') in ['admin', 'waiter', 'cashier'] %}
-          <a href="{{ url_for('orders.orders_list') }}" class="btn btn-sm btn-outline-dark w-100">View orders</a>
-          {% endif %}
-        </div>
       </div>
     </div>
   </div>
   {% else %}
   <div class="col-12">
-    <p class="text-muted mb-0">No tables yet. Admin can add T1, T2…</p>
+    <div class="text-center text-muted py-5 border rounded-4 border-dashed bg-white/50">
+      No tables yet. Admin can add T1, T2…
+    </div>
   </div>
   {% endfor %}
 </div>

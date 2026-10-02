@@ -1,77 +1,89 @@
 {% extends "base.html" %}
 {% block title %}Users · Platter{% endblock %}
 {% block content %}
-<h1 class="h3 brand-font mb-4">Staff users</h1>
+<div class="page-hero">
+  <span class="eyebrow">Team management</span>
+  <h1>Staff users</h1>
+  <p>Manage access for the people who keep service moving.</p>
+</div>
 
-<div class="card shadow-sm mb-4">
-  <div class="card-header">Create user</div>
-  <div class="card-body">
-    <form method="POST" action="{{ url_for('users.users_create') }}" class="row g-2">
-      <div class="col-md-3">
-        <label class="form-label">Username</label>
-        <input type="text" name="username" class="form-control" required>
+<section class="card-platter mb-4">
+  <header class="px-4 py-3 border-bottom fw-semibold">Create a staff account</header>
+  <div class="card-body p-4">
+    <form method="POST" action="{{ url_for('users.users_create') }}" class="row g-3 align-items-end">
+      <div class="col-md-6 col-xl-3">
+        <label class="form-label small fw-semibold text-uppercase text-muted" for="new-username">Username</label>
+        <input id="new-username" type="text" name="username" class="form-control" required autocomplete="username">
       </div>
-      <div class="col-md-3">
-        <label class="form-label">Full name</label>
-        <input type="text" name="full_name" class="form-control" required>
+      <div class="col-md-6 col-xl-3">
+        <label class="form-label small fw-semibold text-uppercase text-muted" for="new-full-name">Full name</label>
+        <input id="new-full-name" type="text" name="full_name" class="form-control" required autocomplete="name">
       </div>
-      <div class="col-md-2">
-        <label class="form-label">Role</label>
-        <select name="role" class="form-select" required>
+      <div class="col-md-4 col-xl-2">
+        <label class="form-label small fw-semibold text-uppercase text-muted" for="new-role">Role</label>
+        <select id="new-role" name="role" class="form-select" required>
           {% for r in roles %}
-          <option value="{{ r }}">{{ r }}</option>
+          <option value="{{ r }}">{{ r.replace('_', ' ') | title }}</option>
           {% endfor %}
         </select>
       </div>
-      <div class="col-md-2">
-        <label class="form-label">Password</label>
-        <input type="password" name="password" class="form-control" required>
+      <div class="col-md-4 col-xl-2">
+        <label class="form-label small fw-semibold text-uppercase text-muted" for="new-password">Password</label>
+        <input id="new-password" type="password" name="password" class="form-control" required autocomplete="new-password">
       </div>
-      <div class="col-md-2 d-flex align-items-end">
-        <button type="submit" class="btn btn-dark w-100">Create</button>
+      <div class="col-md-4 col-xl-2">
+        <button type="submit" class="btn btn-platter w-100">Create user</button>
       </div>
     </form>
   </div>
-</div>
+</section>
 
-<div class="card shadow-sm">
+<section class="card-platter overflow-hidden">
+  <header class="d-flex justify-content-between align-items-center px-4 py-3 border-bottom">
+    <h2 class="h6 fw-bold mb-0">Team directory</h2>
+    <span class="badge rounded-pill bg-light text-dark border">{{ users|length }} accounts</span>
+  </header>
   <div class="table-responsive">
-    <table class="table mb-0 align-middle">
-      <thead>
+    <table class="table table-hover align-middle mb-0">
+      <thead class="table-light">
         <tr>
           <th>Username</th>
           <th>Name</th>
           <th>Role</th>
           <th>Status</th>
-          <th></th>
+          <th class="text-end">Access</th>
         </tr>
       </thead>
       <tbody>
         {% for u in users %}
         <tr>
-          <td>{{ u.username }}</td>
+          <td class="fw-semibold">{{ u.username }}</td>
           <td>{{ u.full_name }}</td>
-          <td class="text-capitalize">{{ u.role }}</td>
+          <td><span class="badge rounded-pill bg-light text-dark border">{{ u.role.replace('_', ' ') | title }}</span></td>
           <td>
             {% if u.active %}
-            <span class="badge text-bg-success">active</span>
+            <span class="badge rounded-pill bg-success-subtle text-success-emphasis px-2 py-2">Active</span>
             {% else %}
-            <span class="badge text-bg-secondary">inactive</span>
+            <span class="badge rounded-pill bg-secondary-subtle text-secondary-emphasis px-2 py-2">Inactive</span>
             {% endif %}
           </td>
           <td class="text-end">
             {% if u.id != session.get('user_id') %}
             <form method="POST" action="{{ url_for('users.users_toggle', user_id=u.id) }}" class="d-inline">
-              <button class="btn btn-sm btn-outline-secondary" type="submit">
+              <button class="btn btn-sm btn-outline-secondary rounded-pill px-3" type="submit">
                 {{ 'Deactivate' if u.active else 'Activate' }}
               </button>
             </form>
+            {% else %}
+            <span class="small text-muted">You</span>
             {% endif %}
           </td>
         </tr>
+        {% else %}
+        <tr><td colspan="5" class="text-center text-muted py-4">No staff accounts yet.</td></tr>
         {% endfor %}
       </tbody>
     </table>
   </div>
-</div>
+</section>
 {% endblock %}

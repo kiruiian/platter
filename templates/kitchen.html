@@ -1,48 +1,77 @@
 {% extends "base.html" %}
 {% block title %}Kitchen · Platter{% endblock %}
 {% block content %}
-<h1 class="h3 brand-font mb-4">Kitchen</h1>
+<div class="page-hero d-flex flex-column flex-md-row justify-content-between align-items-md-end gap-3 mb-4">
+  <div>
+    <span class="eyebrow">Live service</span>
+    <h1>Kitchen board</h1>
+    <p>Work tickets through prep and let the floor know when they are ready.</p>
+  </div>
+  <div class="status-pill">{{ orders|length }} active tickets</div>
+</div>
 
 {% if orders %}
 <div class="row g-3">
   {% for o in orders %}
-  <div class="col-md-6 col-lg-4">
-    <div class="card shadow-sm h-100">
-      <div class="card-header d-flex justify-content-between">
-        <strong>{{ o.order_number }}</strong>
-        <span class="badge text-bg-secondary">{{ o.status }}</span>
-      </div>
-      <div class="card-body">
-        <div class="mb-2 text-muted small">
-          {% if o.table %}Table {{ o.table.label }}{% else %}No table{% endif %}
-          {% if o.party_type %} · {{ o.party_type | title }}{% endif %}
-          {% if o.customer_name %} · {{ o.customer_name }}{% endif %}
+  <div class="col-md-6 col-xl-4">
+    <article class="card-platter h-100 overflow-hidden">
+      <header class="d-flex justify-content-between align-items-start gap-3 px-4 py-3 border-bottom">
+        <div>
+          <div class="small text-muted text-uppercase fw-semibold">Ticket</div>
+          <h2 class="h5 mb-0 mt-1">{{ o.order_number }}</h2>
         </div>
-        <ul class="mb-3">
+        {% if o.status == 'ready' %}
+        <span class="badge rounded-pill bg-success-subtle text-success-emphasis px-3 py-2">Ready</span>
+        {% elif o.status == 'in_kitchen' %}
+        <span class="badge rounded-pill bg-warning-subtle text-warning-emphasis px-3 py-2">In prep</span>
+        {% else %}
+        <span class="badge rounded-pill bg-primary-subtle text-primary-emphasis px-3 py-2">New</span>
+        {% endif %}
+      </header>
+      <div class="card-body p-4">
+        <div class="d-flex flex-wrap gap-2 small text-muted mb-3">
+          <span class="badge rounded-pill bg-light text-dark border">{{ 'Table ' ~ o.table.label if o.table else 'No table' }}</span>
+          {% if o.party_type %}<span class="badge rounded-pill bg-light text-dark border">{{ o.party_type | title }}</span>{% endif %}
+          {% if o.customer_name %}<span class="badge rounded-pill bg-light text-dark border">{{ o.customer_name }}</span>{% endif %}
+        </div>
+
+        <div class="small text-uppercase fw-semibold text-muted mb-2">Items to prepare</div>
+        <ul class="list-unstyled mb-4">
           {% for line in o.lines if line.status != 'void' %}
-          <li>{{ line.quantity }} × {{ line.item_name }}</li>
+          <li class="d-flex align-items-baseline gap-2 py-2 border-bottom">
+            <span class="badge rounded-pill bg-dark text-white">{{ line.quantity }}</span>
+            <span class="fw-semibold">{{ line.item_name }}</span>
+            {% if line.notes %}<span class="small text-muted ms-auto">{{ line.notes }}</span>{% endif %}
+          </li>
+          {% else %}
+          <li class="small text-muted py-2">No active items on this ticket.</li>
           {% endfor %}
         </ul>
+
         <div class="d-flex gap-2">
           {% if o.status == 'submitted' %}
-          <form method="POST" action="{{ url_for('kitchen.order_kitchen_status', order_id=o.id) }}">
+          <form method="POST" action="{{ url_for('kitchen.order_kitchen_status', order_id=o.id) }}" class="flex-fill">
             <input type="hidden" name="status" value="in_kitchen">
-            <button class="btn btn-sm btn-dark" type="submit">Start</button>
+            <button class="btn btn-dark w-100" type="submit">Start preparing</button>
           </form>
           {% endif %}
           {% if o.status in ['submitted', 'in_kitchen'] %}
-          <form method="POST" action="{{ url_for('kitchen.order_kitchen_status', order_id=o.id) }}">
+          <form method="POST" action="{{ url_for('kitchen.order_kitchen_status', order_id=o.id) }}" class="flex-fill">
             <input type="hidden" name="status" value="ready">
-            <button class="btn btn-sm btn-success" type="submit">Ready</button>
+            <button class="btn btn-success w-100" type="submit">Mark ready</button>
           </form>
           {% endif %}
         </div>
       </div>
-    </div>
+    </article>
   </div>
   {% endfor %}
 </div>
 {% else %}
-<p class="text-muted">No tickets in the kitchen queue.</p>
+<div class="text-center text-muted py-5 border rounded-4 bg-white">
+  <div class="fs-1 mb-2">🍽️</div>
+  <h2 class="h5 text-dark">The pass is clear</h2>
+  <p class="mb-0">New tickets will appear here when orders are sent to the kitchen.</p>
+</div>
 {% endif %}
 {% endblock %}

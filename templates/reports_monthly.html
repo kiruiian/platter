@@ -1,19 +1,19 @@
 {% extends "base.html" %}
-{% block title %}Daily report · Platter{% endblock %}
+{% block title %}Monthly report · Platter{% endblock %}
 {% block content %}
 <div class="page-hero d-flex flex-column flex-md-row justify-content-between align-items-md-end gap-3 mb-4">
   <div>
     <span class="eyebrow">Business summary</span>
-    <h1>Daily takings</h1>
-    <p>{{ (day or start).strftime('%d %b %Y') }} · confirmed payments only</p>
+    <h1>Monthly takings</h1>
+    <p>{{ month.strftime('%B %Y') }} · confirmed payments only</p>
   </div>
   <div class="d-flex flex-wrap gap-2 align-items-end">
-    <a href="{{ url_for('cashier.monthly_report') }}" class="btn btn-outline-light btn-sm rounded-pill px-3">Monthly report</a>
-    <form method="GET" action="{{ url_for('cashier.daily_report') }}" class="d-flex gap-2 align-items-end">
+    <a href="{{ url_for('cashier.daily_report') }}" class="btn btn-outline-light btn-sm rounded-pill px-3">Daily report</a>
+    <form method="GET" action="{{ url_for('cashier.monthly_report') }}" class="d-flex gap-2 align-items-end">
       <div>
-        <label class="form-label small text-white-50 mb-1" for="report-day">Choose a day</label>
-        <input id="report-day" type="date" name="date" class="form-control"
-               value="{{ day.isoformat() if day else start.strftime('%Y-%m-%d') }}">
+        <label class="form-label small text-white-50 mb-1" for="report-month">Choose a month</label>
+        <input id="report-month" type="month" name="month" class="form-control"
+               value="{{ month.strftime('%Y-%m') }}">
       </div>
       <button class="btn btn-light" type="submit">Show report</button>
     </form>
@@ -32,12 +32,19 @@
     <div class="stat-card s2">
       <div class="stat-label">Closed orders</div>
       <div class="stat-value">{{ closed }}</div>
-      <div class="stat-meta small opacity-75">Settled this day</div>
+      <div class="stat-meta small opacity-75">Settled this month</div>
+    </div>
+  </div>
+  <div class="col-sm-6 col-xl-3">
+    <div class="stat-card s3">
+      <div class="stat-label">Payments</div>
+      <div class="stat-value">{{ payments|length }}</div>
+      <div class="stat-meta small opacity-75">Confirmed transactions</div>
     </div>
   </div>
   {% for method, row in by_method.items() %}
   <div class="col-sm-6 col-xl-3">
-    <div class="stat-card s3">
+    <div class="stat-card s4">
       <div class="stat-label">{{ method.replace('_', ' ') | title }}</div>
       <div class="stat-value">KES {{ '%.2f'|format(row.total) }}</div>
       <div class="stat-meta small opacity-75">{{ row.count }} payment(s)</div>
@@ -58,6 +65,7 @@
     <table class="table table-hover align-middle mb-0">
       <thead class="table-light">
         <tr>
+          <th>Date</th>
           <th>Time</th>
           <th>Order</th>
           <th>Method</th>
@@ -68,6 +76,7 @@
       <tbody>
         {% for p in payments %}
         <tr>
+          <td class="text-muted">{{ p.received_at.strftime('%d %b') if p.received_at else '—' }}</td>
           <td class="text-muted">{{ p.received_at.strftime('%H:%M') if p.received_at else '—' }}</td>
           <td class="fw-semibold">{{ p.meal_order.order_number if p.meal_order else '—' }}</td>
           <td><span class="badge rounded-pill bg-light text-dark border">{{ (p.method or 'other').replace('_', ' ') | title }}</span></td>
@@ -75,7 +84,7 @@
           <td class="text-end fw-semibold">KES {{ '%.2f'|format(p.amount or 0) }}</td>
         </tr>
         {% else %}
-        <tr><td colspan="5" class="text-center text-muted py-5">No confirmed payments on this day.</td></tr>
+        <tr><td colspan="6" class="text-center text-muted py-5">No confirmed payments for this month.</td></tr>
         {% endfor %}
       </tbody>
     </table>

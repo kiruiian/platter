@@ -1,63 +1,126 @@
 {% extends "base.html" %}
 {% block title %}Dashboard · Platter{% endblock %}
 {% block content %}
-<div class="d-flex flex-wrap justify-content-between align-items-end gap-2 mb-4">
+<div class="page-hero d-flex flex-column flex-md-row justify-content-between align-items-md-end gap-3 mb-4">
   <div>
-    <p class="text-muted mb-1 text-uppercase small fw-semibold" style="letter-spacing:0.06em">Floor overview</p>
-    <h1 class="brand-font h2 mb-0">Welcome back{% if session.get('full_name') %}, {{ session.get('full_name').split(' ')[0] }}{% endif %}</h1>
+    <span class="eyebrow">Operations overview</span>
+    <h1>Welcome back{% if session.get('full_name') %}, {{ session.get('full_name').split(' ')[0] }}{% endif %}</h1>
+    <p>Everything your service floor needs, in one calm workspace.</p>
   </div>
-  <span class="badge rounded-pill text-bg-light border px-3 py-2 text-capitalize">{{ session.get('role') }}</span>
+  <div class="status-pill">{{ session.get('role') }}</div>
 </div>
 
 <div class="row g-3 mb-4">
   <div class="col-6 col-lg-3">
-    <div class="stat-card s1 p-3">
+    <div class="stat-card s1">
       <div class="stat-label">Categories</div>
       <div class="stat-value">{{ category_count }}</div>
+      <div class="stat-meta small opacity-75">Menu groups</div>
     </div>
   </div>
   <div class="col-6 col-lg-3">
-    <div class="stat-card s2 p-3">
+    <div class="stat-card s2">
       <div class="stat-label">Menu items</div>
       <div class="stat-value">{{ item_count }}</div>
+      <div class="stat-meta small opacity-75">Ready to serve</div>
     </div>
   </div>
   <div class="col-6 col-lg-3">
-    <div class="stat-card s3 p-3">
+    <div class="stat-card s3">
       <div class="stat-label">Tables</div>
       <div class="stat-value">{{ table_count }}</div>
+      <div class="stat-meta small opacity-75">Active floor</div>
     </div>
   </div>
   <div class="col-6 col-lg-3">
-    <div class="stat-card s4 p-3">
+    <div class="stat-card s4">
       <div class="stat-label">Open orders</div>
       <div class="stat-value">{{ open_orders }}</div>
+      <div class="stat-meta small opacity-75">In motion</div>
     </div>
   </div>
 </div>
 
-<h2 class="h5 mb-3">Quick actions</h2>
+<div class="d-flex justify-content-between align-items-center mb-3">
+  <h2 class="h5 mb-0">Quick actions</h2>
+  <span class="small text-muted">Daily flow</span>
+</div>
+
 <div class="row g-3">
+  {% if session.get('role') in ['admin', 'kitchen'] %}
+  <div class="col-md-4">
+    <a class="quick-action" href="{{ url_for('kitchen.kitchen_board') }}">
+      <div class="qa-icon">👨‍🍳</div>
+      <div class="fw-semibold">Kitchen</div>
+      <div class="small text-muted">Track live prep and ready tickets</div>
+    </a>
+  </div>
+  {% endif %}
+
+  {% if session.get('role') in ['admin', 'cashier'] %}
+  <div class="col-md-4">
+    <a class="quick-action" href="{{ url_for('cashier.cashier_board') }}">
+      <div class="qa-icon">💳</div>
+      <div class="fw-semibold">Cashier</div>
+      <div class="small text-muted">Payments, receipts and settlement</div>
+    </a>
+  </div>
+  {% endif %}
+
+  {% if session.get('role') in ['admin', 'waiter'] %}
+  <div class="col-md-4">
+    <a class="quick-action" href="{{ url_for('orders.orders_list') }}">
+      <div class="qa-icon">🧾</div>
+      <div class="fw-semibold">Orders</div>
+      <div class="small text-muted">Open, submit and serve active tables</div>
+    </a>
+  </div>
+  {% endif %}
+
+  {% if session.get('role') in ['admin'] %}
   <div class="col-md-4">
     <a class="quick-action" href="{{ url_for('menu.menu_list') }}">
       <div class="qa-icon">📋</div>
       <div class="fw-semibold">Menu</div>
-      <div class="small text-muted">Categories, prices, availability</div>
+      <div class="small text-muted">Manage categories, pricing and stockability</div>
+    </a>
+  </div>
+  <div class="col-md-4">
+    <a class="quick-action" href="{{ url_for('users.users_list') }}">
+      <div class="qa-icon">👥</div>
+      <div class="fw-semibold">Users</div>
+      <div class="small text-muted">Create staff accounts and roles</div>
     </a>
   </div>
   <div class="col-md-4">
     <a class="quick-action" href="{{ url_for('tables.tables_list') }}">
       <div class="qa-icon">🪑</div>
       <div class="fw-semibold">Floor</div>
-      <div class="small text-muted">Tables free, occupied, reserved</div>
+      <div class="small text-muted">Keep tables organized and ready</div>
+    </a>
+  </div>
+  {% else %}
+  <div class="col-md-4">
+    <a class="quick-action" href="{{ url_for('tables.tables_list') }}">
+      <div class="qa-icon">🪑</div>
+      <div class="fw-semibold">Floor</div>
+      <div class="small text-muted">See table states and service status</div>
     </a>
   </div>
   <div class="col-md-4">
-    <div class="quick-action" style="opacity:0.7;cursor:default">
+    <a class="quick-action" href="{{ url_for('orders.orders_list') }}">
       <div class="qa-icon">🧾</div>
       <div class="fw-semibold">Orders</div>
-      <div class="small text-muted">Coming next — open tickets</div>
-    </div>
+      <div class="small text-muted">Jump straight to active tickets</div>
+    </a>
   </div>
+  <div class="col-md-4">
+    <a class="quick-action" href="{{ url_for('cashier.daily_report') }}">
+      <div class="qa-icon">📊</div>
+      <div class="fw-semibold">Reports</div>
+      <div class="small text-muted">Review daily takings and payment summary</div>
+    </a>
+  </div>
+  {% endif %}
 </div>
 {% endblock %}
