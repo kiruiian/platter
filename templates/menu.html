@@ -7,7 +7,7 @@
     <h1>Menu</h1>
     <p>Manage the dishes guests can order across the floor.</p>
   </div>
-  <div class="status-pill">{{ categories|length }} sections</div>
+  <div class="status-pill">{{ category_count }} sections</div>
 </div>
 
 {% if session.get('role') == 'admin' %}
@@ -70,58 +70,73 @@
 </div>
 {% endif %}
 
-{% for c in categories %}
-<div class="card-platter mb-3 overflow-hidden">
-  <div class="card-header border-0 bg-transparent px-4 py-3 fw-semibold">{{ c.name }}</div>
-  <div class="card-body p-0">
-    <div class="table-responsive">
-      <table class="table table-hover align-middle mb-0">
-        <thead class="table-light">
-          <tr>
-            <th>Item</th>
-            <th>Price</th>
-            <th>Diet</th>
-            <th>Status</th>
-            <th class="text-end">Action</th>
-          </tr>
-        </thead>
-        <tbody>
-          {% for item in c.items %}
-          {% if item.active %}
-          <tr>
-            <td>
-              <strong>{{ item.name }}</strong>
-              {% if item.description %}<div class="small text-muted">{{ item.description }}</div>{% endif %}
-            </td>
-            <td>{{ '%.2f'|format(item.price) }}</td>
-            <td>{{ item.diet_tags or '—' }}</td>
-            <td>
-              {% if item.is_available %}
-              <span class="badge rounded-pill bg-success-subtle text-success-emphasis px-2 py-2">Available</span>
-              {% else %}
-              <span class="badge rounded-pill bg-secondary-subtle text-secondary-emphasis px-2 py-2">Unavailable</span>
-              {% endif %}
-            </td>
-            <td class="text-end">
-              {% if session.get('role') == 'admin' %}
-              <form method="POST" action="{{ url_for('menu.menu_item_toggle', item_id=item.id) }}" class="d-inline">
-                <button class="btn btn-sm btn-outline-secondary rounded-pill px-3" type="submit">Toggle</button>
-              </form>
-              {% endif %}
-            </td>
-          </tr>
-          {% endif %}
-          {% else %}
-          <tr><td colspan="5" class="text-muted px-3 py-3">No items in this category.</td></tr>
-          {% endfor %}
-        </tbody>
-      </table>
-    </div>
+<form method="GET" action="{{ url_for('menu.menu_list') }}" class="card-platter p-3 mb-3">
+  <label class="form-label small fw-semibold text-uppercase text-muted" for="menu-search">Find a menu item</label>
+  <div class="input-group">
+    <input id="menu-search" type="search" name="q" value="{{ search_query }}"
+           class="form-control" placeholder="Name, category, or diet tag">
+    <button class="btn btn-dark" type="submit">Search</button>
+    {% if search_query %}
+    <a class="btn btn-outline-secondary" href="{{ url_for('menu.menu_list') }}">Clear</a>
+    {% endif %}
+  </div>
+</form>
+<p class="small text-muted mb-3">
+  {% if search_query %}
+  {{ item_count }} matching item(s){% if item_count > result_limit %}; showing first {{ result_limit }}{% endif %}.
+  {% else %}
+  Showing {{ items|length }} of {{ item_count }} active item(s). Search to find others.
+  {% endif %}
+</p>
+
+<div class="card-platter overflow-hidden">
+  <div class="table-responsive">
+    <table class="table table-hover align-middle mb-0">
+      <thead class="table-light">
+        <tr>
+          <th>Item</th>
+          <th>Category</th>
+          <th>Price</th>
+          <th>Diet</th>
+          <th>Status</th>
+          <th class="text-end">Action</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for item in items %}
+        <tr>
+          <td>
+            <strong>{{ item.name }}</strong>
+            {% if item.description %}<div class="small text-muted">{{ item.description }}</div>{% endif %}
+          </td>
+          <td>{{ item.category.name }}</td>
+          <td>{{ '%.2f'|format(item.price) }}</td>
+          <td>{{ item.diet_tags or '—' }}</td>
+          <td>
+            {% if item.is_available %}
+            <span class="badge rounded-pill bg-success-subtle text-success-emphasis px-2 py-2">Available</span>
+            {% else %}
+            <span class="badge rounded-pill bg-secondary-subtle text-secondary-emphasis px-2 py-2">Unavailable</span>
+            {% endif %}
+          </td>
+          <td class="text-end">
+            {% if session.get('role') == 'admin' %}
+            <form method="POST" action="{{ url_for('menu.menu_item_toggle', item_id=item.id) }}" class="d-inline">
+              <input type="hidden" name="search_query" value="{{ search_query }}">
+              <button class="btn btn-sm btn-outline-secondary rounded-pill px-3" type="submit">Toggle</button>
+            </form>
+            {% endif %}
+          </td>
+        </tr>
+        {% else %}
+        <tr>
+          <td colspan="6" class="text-center text-muted py-5">
+            {% if search_query %}No menu items match “{{ search_query }}”.{% else %}No active menu items yet.{% endif %}
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
   </div>
 </div>
-{% else %}
-<div class="text-center text-muted py-5 border rounded-4 border-dashed bg-white/50">
-  No categories yet. Add one as admin.
-</div>
-{% endfor %}
 {% endblock %}

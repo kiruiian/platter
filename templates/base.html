@@ -39,10 +39,19 @@
       backdrop-filter: blur(8px);
     }
     .navbar-platter .navbar-brand {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.55rem;
       font-family: "Playfair Display", Georgia, serif;
       font-weight: 700;
       letter-spacing: 0.02em;
       font-size: 1.6rem;
+    }
+    .navbar-brand-mark {
+      display: block;
+      width: 1.45rem;
+      height: 1.45rem;
+      flex: 0 0 auto;
     }
     .navbar-platter .nav-link {
       color: rgba(255,255,255,0.75) !important;
@@ -202,7 +211,17 @@
   {% if session.get('user_id') %}
   <nav class="navbar navbar-expand-lg navbar-dark navbar-platter mb-4">
     <div class="container">
-      <a class="navbar-brand" href="{{ url_for("dashboard.dashboard") }}">Platter</a>
+      <a class="navbar-brand" href="{{ url_for('dashboard.dashboard') }}">
+        <svg class="navbar-brand-mark" viewBox="0 0 32 32" fill="none"
+             stroke="currentColor" stroke-width="1.7" stroke-linecap="round"
+             stroke-linejoin="round" aria-hidden="true">
+          <circle cx="16" cy="16" r="8.2"></circle>
+          <circle cx="16" cy="16" r="5.2"></circle>
+          <path d="M3.5 5.5v6.8M6 5.5v6.8M8.5 5.5v6.8M6 12.3v13.9"></path>
+          <path d="M26 5.5v5.7c0 2.1 1 3.6 2.5 3.6S31 13.3 31 11.2V5.5M28.5 14.8v11.4"></path>
+        </svg>
+        <span>Platter</span>
+      </a>
       <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navMain">
         <span class="navbar-toggler-icon"></span>
       </button>

@@ -16,6 +16,25 @@
 </div>
 {% endif %}
 
+<form method="GET" action="{{ url_for('orders.orders_list') }}" class="card-platter p-3 mb-3">
+  <label class="form-label small fw-semibold text-uppercase text-muted" for="order-search">Find an order</label>
+  <div class="input-group">
+    <input id="order-search" type="search" name="q" value="{{ search_query }}"
+           class="form-control" placeholder="Order number, guest name, or table">
+    <button class="btn btn-dark" type="submit">Search</button>
+    {% if search_query %}
+    <a class="btn btn-outline-secondary" href="{{ url_for('orders.orders_list') }}">Clear</a>
+    {% endif %}
+  </div>
+</form>
+<p class="small text-muted mb-3">
+  {% if search_query %}
+  {{ order_count }} matching order(s){% if order_count > result_limit %}; showing first {{ result_limit }}{% endif %}.
+  {% else %}
+  Showing {{ orders|length }} of {{ order_count }} open order(s). Search to find others.
+  {% endif %}
+</p>
+
 {% if orders %}
 <div class="card-platter overflow-hidden">
   <div class="table-responsive">
@@ -51,7 +70,11 @@
 </div>
 {% else %}
 <div class="text-center text-muted py-5 border rounded-4 border-dashed bg-white/50">
+  {% if search_query %}
+  No open orders match “{{ search_query }}”.
+  {% else %}
   No open orders. Open one from a free table on the Floor.
+  {% endif %}
 </div>
 {% endif %}
 {% endblock %}

@@ -1,6 +1,7 @@
 from decimal import Decimal
 from datetime import datetime
 from flask import Blueprint, flash, redirect, render_template, request, session, url_for
+from sqlalchemy import or_
 
 from app.extensions import db
 from app.models import (
@@ -52,21 +53,36 @@ def recalculate_order_totals(order: MealOrder) -> None:
 @orders_bp.route("/orders")
 @login_required()
 def orders_list():
-    orders = (
-        MealOrder.query.filter(
-            MealOrder.status.in_(
-                ["draft", "submitted", "in_kitchen", "ready", "delivered"]
+    search_query = request.args.get("q", "").strip()
+    orders_query = MealOrder.query.filter(
+        MealOrder.status.in_(
+            ["draft", "submitted", "in_kitchen", "ready", "delivered"]
+        )
+    )
+    if search_query:
+        pattern = f"%{search_query}%"
+        orders_query = orders_query.outerjoin(RestaurantTable).filter(
+            or_(
+                MealOrder.order_number.ilike(pattern),
+                MealOrder.customer_name.ilike(pattern),
+                RestaurantTable.label.ilike(pattern),
             )
         )
-        .order_by(MealOrder.opened_at.desc())
-        .limit(50)
+    orders = (
+        orders_query.order_by(MealOrder.opened_at.desc())
+        .limit(10)
         .all()
     )
+    order_count = orders_query.order_by(None).count()
     ready_count = MealOrder.query.filter_by(status="ready").count()
     return render_template(
         "orders.html",
         orders=orders,
-        ready_count=ready_count,)
+        ready_count=ready_count,
+        order_count=order_count,
+        search_query=search_query,
+        result_limit=10,
+    )
 
 @orders_bp.route("/orders/open/<int:table_id>", methods=["POST"])
 @login_required(roles={"admin", "waiter", "cashier"})
@@ -99,12 +115,40 @@ def order_open_table(table_id):
 @login_required()
 def order_detail(order_id):
     order = MealOrder.query.get_or_404(order_id)
-    categories = (
-        MenuCategory.query.filter_by(active=True)
-        .order_by(MenuCategory.sort_order, MenuCategory.name)
+    search_query = request.args.get("q", "").strip()
+    items_query = MenuItem.query.join(MenuCategory).filter(
+        MenuCategory.active.is_(True),
+        MenuItem.active.is_(True),
+        MenuItem.is_available.is_(True),
+    )
+    if search_query:
+        pattern = f"%{search_query}%"
+        items_query = items_query.filter(
+            or_(
+                MenuItem.name.ilike(pattern),
+                MenuItem.description.ilike(pattern),
+                MenuItem.diet_tags.ilike(pattern),
+                MenuCategory.name.ilike(pattern),
+            )
+        )
+    menu_items = (
+        items_query
+        .order_by(MenuCategory.sort_order, MenuCategory.name, MenuItem.name)
+        .limit(10)
         .all()
     )
-    return render_template("order_detail.html", order=order, categories=categories)
+    item_count = items_query.order_by(None).count()
+    return render_template(
+        "order_detail.html",
+        order=order,
+        menu_items=menu_items,
+        categories=MenuCategory.query.filter_by(active=True)
+        .order_by(MenuCategory.sort_order, MenuCategory.name)
+        .all(),
+        search_query=search_query,
+        item_count=item_count,
+        result_limit=10,
+    )
 
 @orders_bp.route("/orders/<int:order_id>/add-item", methods=["POST"])
 @login_required(roles={"admin", "waiter", "cashier"})
@@ -112,7 +156,8 @@ def order_add_item(order_id):
     order = MealOrder.query.get_or_404(order_id)
     if order.status in {"closed", "cancelled"}:
         flash("This order is closed.", "warning")
-        return redirect(url_for("orders.order_detail", order_id=order.id))
+        search_query = request.form.get("search_query", "").strip()
+        return redirect(url_for("orders.order_detail", order_id=order.id, q=search_query))
 
     item_id = request.form.get("menu_item_id", type=int)
     qty = request.form.get("quantity", type=int) or 1
@@ -121,7 +166,8 @@ def order_add_item(order_id):
     item = MenuItem.query.get(item_id)
     if not item or not item.active or not item.is_available:
         flash("Item not available.", "danger")
-        return redirect(url_for("orders.order_detail", order_id=order.id))
+        search_query = request.form.get("search_query", "").strip()
+        return redirect(url_for("orders.order_detail", order_id=order.id, q=search_query))
 
     line = MealOrderLine(
         meal_order_id=order.id,
@@ -138,7 +184,8 @@ def order_add_item(order_id):
     recalculate_order_totals(order)
     db.session.commit()
     flash(f"Added {qty} × {item.name}.", "success")
-    return redirect(url_for("orders.order_detail", order_id=order.id))
+    search_query = request.form.get("search_query", "").strip()
+    return redirect(url_for("orders.order_detail", order_id=order.id, q=search_query))
 
 @orders_bp.route("/orders/<int:order_id>/submit", methods=["POST"])
 @login_required(roles={"admin", "waiter", "cashier"})

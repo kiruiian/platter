@@ -69,25 +69,41 @@
         {% if order.status in ['closed', 'cancelled'] %}
         <p class="text-muted mb-0">Order is closed.</p>
         {% else %}
-          {% for c in categories %}
-          <h6 class="mt-2">{{ c.name }}</h6>
-          {% for item in c.items %}
-            {% if item.active and item.is_available %}
+        <form method="GET" action="{{ url_for('orders.order_detail', order_id=order.id) }}" class="mb-3">
+          <label class="form-label small fw-semibold text-uppercase text-muted" for="menu-search">Find a menu item</label>
+          <div class="input-group">
+            <input id="menu-search" type="search" name="q" value="{{ search_query }}"
+                   class="form-control" placeholder="Name, category, or diet tag">
+            <button class="btn btn-dark" type="submit">Search</button>
+            {% if search_query %}
+            <a class="btn btn-outline-secondary" href="{{ url_for('orders.order_detail', order_id=order.id) }}">Clear</a>
+            {% endif %}
+          </div>
+        </form>
+        <p class="small text-muted mb-3">
+          {% if search_query %}
+          {{ item_count }} matching item(s){% if item_count > result_limit %}; showing first {{ result_limit }}{% endif %}.
+          {% else %}
+          Showing {{ menu_items|length }} of {{ item_count }} available item(s). Search to find others.
+          {% endif %}
+        </p>
+        {% for item in menu_items %}
             <form method="POST" action="{{ url_for('orders.order_add_item', order_id=order.id) }}"
                   class="d-flex align-items-center gap-2 mb-2 border-bottom pb-2">
               <input type="hidden" name="menu_item_id" value="{{ item.id }}">
+              <input type="hidden" name="search_query" value="{{ search_query }}">
               <div class="flex-grow-1">
                 <div class="fw-semibold">{{ item.name }}</div>
-                <div class="small text-muted">KES {{ '%.2f'|format(item.price) }}</div>
+                <div class="small text-muted">{{ item.category.name }} · KES {{ '%.2f'|format(item.price) }}</div>
               </div>
               <input type="number" name="quantity" value="1" min="1" class="form-control form-control-sm" style="width:4rem">
               <button type="submit" class="btn btn-sm btn-dark">Add</button>
             </form>
-            {% endif %}
-          {% endfor %}
-          {% else %}
-          <p class="text-muted">No menu categories.</p>
-          {% endfor %}
+        {% else %}
+        <p class="text-muted mb-0">
+          {% if search_query %}No available items match “{{ search_query }}”.{% else %}No available menu items.{% endif %}
+        </p>
+        {% endfor %}
         {% endif %}
       </div>
     </div>
