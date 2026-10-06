@@ -91,11 +91,27 @@ def cashier_pay(order_id):
             flash(f"Amount must be between 0.01 and {due:.2f}.", "danger")
             return redirect(url_for("cashier.cashier_board"))
 
+    if method == "mpesa":
+        reference = request.form.get("reference", "").strip()[:80]
+        if not reference:
+            flash("Enter the M-Pesa confirmation code.", "danger")
+            return redirect(url_for("cashier.cashier_board"))
+        existing = Payment.query.filter(
+            Payment.method == "mpesa",
+            db.func.lower(Payment.reference) == reference.lower(),
+            db.or_(Payment.result_desc.is_(None), Payment.result_desc != "pending"),
+        ).first()
+        if existing:
+            flash(f"M-Pesa code {reference} is already recorded.", "danger")
+            return redirect(url_for("cashier.cashier_board"))
+    else:
+        reference = request.form.get("reference", "").strip()[:80] or None
+
     payment = Payment(
         meal_order_id=order.id,
         amount=Decimal(str(round(amount, 2))),
         method=method,
-        reference=request.form.get("reference", "").strip()[:80] or None,
+        reference=reference,
         received_by_id=session.get("user_id"),
         tendered=Decimal(str(tendered)) if tendered is not None else None,
         change_given=Decimal(str(change_given)) if change_given is not None else None,
@@ -179,7 +195,11 @@ def stk_push(order_id):
         flash("Enter a valid Kenyan number (07… or 2547…).", "danger")
         return redirect(url_for("cashier.cashier_board"))
 
-    already_paid = sum(float(p.amount or 0) for p in order.payments)
+    already_paid = sum(
+        float(p.amount or 0)
+        for p in order.payments
+        if (p.result_desc or "") != "pending"
+    )
     due = round(float(order.total or 0) - already_paid, 2)
     if due <= 0:
         flash("Order already paid.", "warning")

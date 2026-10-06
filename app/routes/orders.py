@@ -216,6 +216,21 @@ def order_void_line(order_id, line_id):
     flash(f"Voided {line.item_name}.", "success")
     return redirect(url_for("orders.order_detail", order_id=order.id))
 
+
+@orders_bp.route("/orders/<int:order_id>/ready", methods=["POST"])
+@login_required(roles={"admin", "waiter", "cashier"})
+def order_mark_ready(order_id):
+    order = MealOrder.query.get_or_404(order_id)
+    if order.status not in {"submitted", "in_kitchen"}:
+        flash("Only a sent ticket can be marked ready.", "warning")
+        return redirect(url_for("orders.order_detail", order_id=order.id))
+    order.status = "ready"
+    db.session.commit()
+    flash(f"{order.order_number} is ready for the cashier.", "success")
+    return redirect(url_for("orders.order_detail", order_id=order.id))
+
+
+
 @orders_bp.route("/orders/<int:order_id>/served", methods=["POST"])
 @login_required(roles={"admin", "waiter"})
 def order_mark_served(order_id):

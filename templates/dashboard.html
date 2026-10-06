@@ -35,8 +35,49 @@
   <div class="col-6 col-lg-3">
     <div class="stat-card s4">
       <div class="stat-label">Open orders</div>
-      <div class="stat-value">{{ open_orders }}</div>
+      <div class="stat-value">{{ open_count }}</div>
       <div class="stat-meta small opacity-75">In motion</div>
+    </div>
+  </div>
+</div>
+
+<div class="row g-3 mb-4">
+  <div class="col-lg-7">
+    <div class="card-platter h-100">
+      <div class="card-header border-0 bg-transparent px-4 py-3 fw-semibold">Open tickets</div>
+      <div class="card-body px-4 pb-4">
+        {% if open_orders %}
+        <div class="table-responsive">
+          <table class="table align-middle mb-0">
+            <thead>
+              <tr><th>Order</th><th>Table</th><th>Status</th><th class="text-end">Total</th></tr>
+            </thead>
+            <tbody>
+              {% for order in open_orders %}
+              <tr>
+                <td><a href="{{ url_for('orders.order_detail', order_id=order.id) }}">{{ order.order_number }}</a></td>
+                <td>{{ order.table.label if order.table else '—' }}</td>
+                <td class="text-capitalize">{{ order.status.replace('_', ' ') }}</td>
+                <td class="text-end">KES {{ '%.2f'|format(order.total or 0) }}</td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+        {% else %}
+        <p class="text-muted mb-0">No open tickets.</p>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+  <div class="col-lg-5">
+    <div class="card-platter h-100">
+      <div class="card-header border-0 bg-transparent px-4 py-3 fw-semibold">Today</div>
+      <div class="card-body px-4 pb-4">
+        <div class="stat-label">Takings</div>
+        <div class="stat-value">KES {{ '%.2f'|format(takings) }}</div>
+        <div class="small text-muted mt-2">Confirmed payments only. Pending STK prompts are not included.</div>
+      </div>
     </div>
   </div>
 </div>

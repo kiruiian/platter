@@ -1,11 +1,13 @@
 from flask import Blueprint, flash, redirect, render_template, request, url_for
 
 from app.extensions import db
-from app.models import RestaurantTable
+from app.models import MealOrder, RestaurantTable
 from app.routes.auth import login_required
 
 
 tables_bp = Blueprint("tables", __name__)
+
+OPEN_STATUSES = ("draft", "submitted", "in_kitchen", "ready", "delivered")
 
 
 @tables_bp.route("/tables")
@@ -16,7 +18,16 @@ def tables_list():
         .order_by(RestaurantTable.label)
         .all()
     )
-    return render_template("tables.html", tables=tables)
+    open_orders = (
+        MealOrder.query.filter(MealOrder.status.in_(OPEN_STATUSES))
+        .order_by(MealOrder.opened_at.desc())
+        .all()
+    )
+    current = {}
+    for order in open_orders:
+        if order.table_id and order.table_id not in current:
+            current[order.table_id] = order
+    return render_template("tables.html", tables=tables, current=current)
 
 
 @tables_bp.route("/tables", methods=["POST"])

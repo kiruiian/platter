@@ -19,11 +19,16 @@
       <button type="submit" class="btn btn-dark">Send to kitchen</button>
     </form>
     {% endif %}
+    {% if order.status in ['submitted', 'in_kitchen'] and session.get('role') in ['admin', 'waiter', 'cashier'] %}
+    <form method="POST" action="{{ url_for('orders.order_mark_ready', order_id=order.id) }}" class="mt-2">
+      <button type="submit" class="btn btn-success">Mark ready</button>
+    </form>
+    {% endif %}
     {% if order.status == 'ready' and session.get('role') in ['admin', 'waiter'] %}
       <form method="POST" action="{{ url_for('orders.order_mark_served', order_id=order.id) }}" class="mt-2">
         <button type="submit" class="btn btn-success">Mark served</button>
       </form>
-  {% endif %}
+    {% endif %}
   </div>
 </div>
 

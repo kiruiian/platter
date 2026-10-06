@@ -33,6 +33,7 @@
 
 <div class="row g-3">
   {% for t in tables %}
+  {% set active_order = current.get(t.id) %}
   <div class="col-6 col-md-4 col-lg-3">
     <div class="card-platter h-100">
       <div class="card-body p-3">
@@ -48,7 +49,14 @@
         </div>
         <div class="text-muted small mb-3">{{ t.capacity }} seats</div>
 
-        {% if session.get('role') in ['admin', 'waiter', 'cashier'] %}
+        {% if active_order %}
+        <div class="rounded-3 bg-light p-3 mb-3">
+          <div class="small text-muted">Current order</div>
+          <div class="fw-semibold">{{ active_order.order_number }}</div>
+          <div class="small text-capitalize">{{ active_order.status.replace('_', ' ') }}</div>
+          <a href="{{ url_for('orders.order_detail', order_id=active_order.id) }}" class="btn btn-outline-dark btn-sm w-100 mt-2">View order</a>
+        </div>
+        {% elif session.get('role') in ['admin', 'waiter', 'cashier'] %}
         <form method="POST" action="{{ url_for('orders.order_open_table', table_id=t.id) }}" class="mt-2">
           <select name="party_type" class="form-select form-select-sm mb-2" required>
             <option value="customer">Customer</option>
