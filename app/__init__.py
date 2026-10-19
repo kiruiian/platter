@@ -15,6 +15,7 @@ from app.routes.store import store_bp
 from app.routes.tables import tables_bp
 from app.routes.users import users_bp
 from app.routes.staff import staff_bp
+from app.routes.expenses import expenses_bp
 
 load_dotenv()
 
@@ -140,6 +141,7 @@ def create_app(test_config: dict | None = None) -> Flask:
     app.register_blueprint(cashier_bp)
     app.register_blueprint(store_bp)
     app.register_blueprint(staff_bp)
+    app.register_blueprint(expenses_bp)
 
     with app.app_context():
         db.create_all()

@@ -10,7 +10,7 @@ from flask import Blueprint, flash, redirect, render_template, request, session,
 from app.extensions import db
 from app.models import MealOrder, Payment
 from app.routes.auth import login_required
-from app.models import MealOrder, Payment, HospitalStaff
+from app.models import MealOrder, Payment, HospitalStaff, Expense
 
 cashier_bp = Blueprint("cashier", __name__)
 
@@ -305,8 +305,9 @@ def daily_report():
     except ValueError:
         day = datetime.now().date()
 
-    start = datetime.combine(day, datetime.min.time())
-    end = start + timedelta(days=1)
+    # Wider window to catch timezone differences (EAT vs UTC)
+    start = datetime(day.year, day.month, day.day) - timedelta(hours=3)
+    end = datetime(day.year, day.month, day.day) + timedelta(days=1, hours=3)
 
     payments = (
         Payment.query.filter(
@@ -331,6 +332,12 @@ def daily_report():
         MealOrder.closed_at < end,
     ).count()
 
+    day_expenses = Expense.query.filter(
+        Expense.expense_date == day
+    ).all()
+    expenses_total = sum(float(e.amount or 0) for e in day_expenses)
+    net_profit = grand - expenses_total
+
     return render_template(
         "reports_daily.html",
         start=start,
@@ -339,8 +346,9 @@ def daily_report():
         grand=grand,
         closed=closed,
         payments=confirmed,
+        expenses_total=expenses_total,
+        net_profit=net_profit,
     )
-
 
 @cashier_bp.route("/reports/monthly")
 @login_required(roles={"admin", "cashier"})
@@ -379,6 +387,13 @@ def monthly_report():
         MealOrder.closed_at >= start,
         MealOrder.closed_at < end,
     ).count()
+    # Expenses for the month
+    month_expenses = Expense.query.filter(
+    Expense.expense_date >= month,
+    Expense.expense_date < end.date() if hasattr(end, 'date') else end
+    ).all()
+    expenses_total = sum(float(e.amount or 0) for e in month_expenses)
+    net_profit = grand - expenses_total
 
     return render_template(
         "reports_monthly.html",
@@ -387,6 +402,8 @@ def monthly_report():
         grand=grand,
         closed=closed,
         payments=confirmed,
+        expenses_total=expenses_total,
+        net_profit=net_profit,
     )
 
 @cashier_bp.route("/reports/staff")

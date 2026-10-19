@@ -35,6 +35,20 @@
       <div class="stat-meta small opacity-75">Settled this day</div>
     </div>
   </div>
+  <div class="col-sm-6 col-xl-3">
+    <div class="stat-card s3">
+      <div class="stat-label">Expenses</div>
+      <div class="stat-value">KES {{ '%.2f'|format(expenses_total or 0) }}</div>
+      <div class="stat-meta small opacity-75">Kitchen costs</div>
+    </div>
+  </div>
+  <div class="col-sm-6 col-xl-3">
+    <div class="stat-card s4">
+      <div class="stat-label">Net Profit</div>
+      <div class="stat-value">KES {{ '%.2f'|format(net_profit or 0) }}</div>
+      <div class="stat-meta small opacity-75">Takings − Expenses</div>
+    </div>
+  </div>
   {% for method, row in by_method.items() %}
   <div class="col-sm-6 col-xl-3">
     <div class="stat-card s3">

@@ -249,6 +249,7 @@
 
           {% if session.get('role') in ['admin', 'cashier'] %}
             <a class="nav-link" href="{{ url_for('cashier.cashier_board') }}">Cashier</a>
+            <a class="nav-link" href="{{ url_for('expenses.expenses_list') }}">Expenses</a>
             <a class="nav-link" href="{{ url_for('cashier.daily_report') }}">Daily Reports</a>
             <a class="nav-link" href="{{ url_for('cashier.monthly_report') }}">Monthly Reports</a>
             <a class="nav-link" href="{{ url_for('cashier.staff_meals_report') }}">Staff meals</a>

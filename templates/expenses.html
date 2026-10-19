@@ -1,0 +1,62 @@
+{% extends "base.html" %}
+{% block title %}Expenses · Platter{% endblock %}
+{% block content %}
+<div class="page-hero mb-4">
+  <span class="eyebrow">Kitchen costs</span>
+  <h1>Expenses</h1>
+  <p>Record expenses, and other costs.</p>
+</div>
+
+<div class="card-platter mb-4">
+  <div class="card-body">
+    <form method="POST" class="row g-3 align-items-end">
+      <div class="col-md-3">
+        <label class="form-label">Date</label>
+        <input type="date" name="expense_date" class="form-control">
+      </div>
+      <div class="col-md-4">
+        <label class="form-label">Description</label>
+        <input type="text" name="description" class="form-control" placeholder="Charcoal, gas, vegetables..." required>
+      </div>
+      <div class="col-md-2">
+        <label class="form-label">Amount</label>
+        <input type="number" name="amount" step="0.01" min="0.01" class="form-control" required>
+      </div>
+      <div class="col-md-2">
+        <label class="form-label">Category</label>
+        <select name="category" class="form-select">
+          <option value="fuel">Fuel</option>
+          <option value="food">Food</option>
+          <option value="cleaning">Cleaning</option>
+          <option value="other">Other</option>
+        </select>
+      </div>
+      <div class="col-md-1">
+        <button type="submit" class="btn btn-platter w-100">Add</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<div class="card-platter">
+  <div class="table-responsive">
+    <table class="table mb-0">
+      <thead class="table-light">
+        <tr><th>Date</th><th>Description</th><th>Category</th><th class="text-end">Amount</th></tr>
+      </thead>
+      <tbody>
+        {% for e in expenses %}
+        <tr>
+          <td>{{ e.expense_date }}</td>
+          <td>{{ e.description }}</td>
+          <td>{{ e.category | title }}</td>
+          <td class="text-end">KES {{ '%.2f'|format(e.amount) }}</td>
+        </tr>
+        {% else %}
+        <tr><td colspan="4" class="text-center text-muted py-4">No expenses yet.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

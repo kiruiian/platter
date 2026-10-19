@@ -82,3 +82,14 @@ class HospitalStaff(db.Model):
     employee_no = db.Column(db.String(40))         # optional
     active = db.Column(db.Boolean, default=True)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+class Expense(db.Model):
+    __tablename__ = "expenses"
+
+    id = db.Column(db.Integer, primary_key=True)
+    expense_date = db.Column(db.Date, nullable=False, default=datetime.utcnow)
+    description = db.Column(db.String(200), nullable=False)
+    amount = db.Column(Numeric(10, 2), nullable=False)
+    category = db.Column(db.String(40), default="other")
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    created_by_id = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=True)
