@@ -12,9 +12,10 @@
       margin: 0 auto;
       color: #000;
     }
-    h1 { font-size: 16px; text-align: center; margin: 0 0 4px; }
-    .muted { text-align: center; margin: 0 0 8px; }
-    hr { border: none; border-top: 1px dashed #000; }
+    h1 { font-size: 15px; text-align: center; margin: 0 0 2px; }
+    .center { text-align: center; }
+    .muted { text-align: center; margin: 0 0 6px; font-size: 11px; }
+    hr { border: none; border-top: 1px dashed #000; margin: 6px 0; }
     table { width: 100%; border-collapse: collapse; }
     td { padding: 2px 0; vertical-align: top; }
     .right { text-align: right; }
@@ -29,14 +30,16 @@
     <a href="{{ url_for('cashier.cashier_board') }}">Back to cashier</a>
   </div>
 
-  <h1>PLATTER</h1>
-  <p class="muted">Restaurant receipt</p>
+  <h1>ST. GABRIEL HOSPITAL CAFETERIA</h1>
+  <p class="muted">Till: 6679888</p>
   <hr>
+
   <div>{{ order.order_number }}</div>
   <div>{{ payment.received_at.strftime('%d %b %Y %H:%M') if payment.received_at else '' }}</div>
   {% if order.table %}<div>Table {{ order.table.label }}</div>{% endif %}
   {% if order.customer_name %}<div>{{ order.customer_name }}</div>{% endif %}
   <hr>
+
   <table>
     {% for line in order.lines if line.status != 'void' %}
     <tr>
@@ -46,6 +49,7 @@
     {% endfor %}
   </table>
   <hr>
+
   <table>
     <tr><td>TOTAL</td><td class="right big">{{ '%.2f'|format(order.total or 0) }}</td></tr>
     <tr><td>Paid ({{ payment.method }})</td><td class="right">{{ '%.2f'|format(payment.amount or 0) }}</td></tr>
@@ -58,7 +62,18 @@
     {% endif %}
   </table>
   <hr>
-  <p class="muted">Thank you</p>
+
+  <p class="muted">Thank you for dining with us!</p>
+  <br>
+  <div class="center">
+    Served by: 
+    {% if order.opened_by %}
+      {{ order.opened_by.full_name or order.opened_by.username }}
+    {% else %}
+      Staff
+    {% endif %}
+  </div>
+
   <script>window.addEventListener("load", function () { window.print(); });</script>
 </body>
 </html>

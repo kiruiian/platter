@@ -4,3 +4,4 @@ from app.models.table import RestaurantTable
 from app.models.order import MealOrder, MealOrderLine
 from app.models.payment import Payment
 from app.models.store import StoreItem, StockMovement  # noqa: F401
+from app.models.order import MealOrder, MealOrderLine, HospitalStaff

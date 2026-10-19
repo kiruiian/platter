@@ -10,6 +10,7 @@ from app.models import (
     MenuCategory,
     MenuItem,
     RestaurantTable,
+    table,
 )
 from app.routes.auth import login_required
 
@@ -104,7 +105,15 @@ def order_open_table(table_id):
         opened_by_id=session.get("user_id"),
         party_type=party_type,
         customer_name=request.form.get("customer_name", "").strip()[:120] or None,
+        ward_name=request.form.get("ward_name", "").strip()[:80] or None,
+        patient_name=request.form.get("patient_name", "").strip()[:120] or None,
     )
+
+    if party_type == "staff":
+        staff_id = request.form.get("staff_id", type=int)
+        if staff_id:
+            order.staff_id = staff_id
+
     table.status = "occupied"
     db.session.add(order)
     db.session.commit()
@@ -238,7 +247,16 @@ def order_mark_served(order_id):
     if order.status != "ready":
         flash("Only ready orders can be marked served.", "warning")
         return redirect(url_for("orders.order_detail", order_id=order.id))
+
     order.status = "delivered"
+
+    # Auto-close staff and patient orders (no payment needed)
+    if order.party_type in {"staff", "patient"}:
+        order.status = "closed"
+        order.closed_at = datetime.utcnow()
+        if order.table:
+            order.table.status = "free"
+
     db.session.commit()
-    flash(f"{order.order_number} marked served. Cashier can bill.", "success")
+    flash(f"{order.order_number} marked served.", "success")
     return redirect(url_for("orders.order_detail", order_id=order.id))

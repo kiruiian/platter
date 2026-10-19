@@ -1,7 +1,7 @@
 from flask import Blueprint, flash, redirect, render_template, request, url_for
 
 from app.extensions import db
-from app.models import MealOrder, RestaurantTable
+from app.models import MealOrder, RestaurantTable, HospitalStaff
 from app.routes.auth import login_required
 
 
@@ -27,7 +27,8 @@ def tables_list():
     for order in open_orders:
         if order.table_id and order.table_id not in current:
             current[order.table_id] = order
-    return render_template("tables.html", tables=tables, current=current)
+    staff = HospitalStaff.query.filter_by(active=True).order_by(HospitalStaff.full_name).all()
+    return render_template("tables.html", tables=tables, current=current, staff=staff)
 
 
 @tables_bp.route("/tables", methods=["POST"])

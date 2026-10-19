@@ -10,6 +10,7 @@ from flask import Blueprint, flash, redirect, render_template, request, session,
 from app.extensions import db
 from app.models import MealOrder, Payment
 from app.routes.auth import login_required
+from app.models import MealOrder, Payment, HospitalStaff
 
 cashier_bp = Blueprint("cashier", __name__)
 
@@ -20,10 +21,13 @@ PAYMENT_METHODS = ("cash", "mpesa", "card", "charge_to_ward")
 @login_required(roles={"admin", "cashier"})
 def cashier_board():
     raw = (
-        MealOrder.query.filter(MealOrder.status.in_(["ready", "delivered"]))
-        .order_by(MealOrder.opened_at.asc())
-        .all()
+    MealOrder.query.filter(
+        MealOrder.status.in_(["ready", "delivered"]),
+        MealOrder.party_type == "customer",
     )
+    .order_by(MealOrder.opened_at.asc())
+    .all()
+)
     orders = []
     for order in raw:
         paid = sum(
@@ -383,4 +387,213 @@ def monthly_report():
         grand=grand,
         closed=closed,
         payments=confirmed,
+    )
+
+@cashier_bp.route("/reports/staff")
+@login_required(roles={"admin", "cashier"})
+def staff_meals_report():
+    raw = request.args.get("month", "").strip()
+    staff_filter = request.args.get("staff_id", type=int)
+
+    try:
+        month = datetime.strptime(raw, "%Y-%m").date().replace(day=1)
+    except ValueError:
+        today = datetime.now().date()
+        month = today.replace(day=1)
+
+    start = datetime.combine(month, datetime.min.time())
+    next_month = month.month % 12 + 1
+    next_year = month.year + (month.month // 12)
+    end = datetime(next_year, next_month, 1)
+
+    query = MealOrder.query.filter(
+        MealOrder.party_type == "staff",
+        MealOrder.opened_at >= start,
+        MealOrder.opened_at < end,
+        MealOrder.status != "cancelled",
+    )
+
+    if staff_filter:
+        query = query.filter(MealOrder.staff_id == staff_filter)
+
+    orders = query.order_by(MealOrder.opened_at.desc()).all()
+
+    from collections import defaultdict
+    by_staff = defaultdict(lambda: {"count": 0, "total": 0.0, "name": "Unknown"})
+    for order in orders:
+        key = order.staff_id or 0
+        by_staff[key]["count"] += 1
+        by_staff[key]["total"] += float(order.total or 0)
+        if order.staff:
+            by_staff[key]["name"] = order.staff.full_name
+
+    all_staff = HospitalStaff.query.filter_by(active=True).order_by(HospitalStaff.full_name).all()
+
+    return render_template(
+        "reports_staff.html",
+        month=month,
+        by_staff=dict(by_staff),
+        orders=orders,
+        grand=sum(v["total"] for v in by_staff.values()),
+        all_staff=all_staff,
+        selected_staff=staff_filter,
+    )
+@cashier_bp.route("/reports/staff/export")
+@login_required(roles={"admin", "cashier"})
+def staff_meals_export():
+    raw = request.args.get("month", "").strip()
+    staff_filter = request.args.get("staff_id", type=int)
+
+    try:
+        month = datetime.strptime(raw, "%Y-%m").date().replace(day=1)
+    except ValueError:
+        today = datetime.now().date()
+        month = today.replace(day=1)
+
+    start = datetime.combine(month, datetime.min.time())
+    next_month = month.month % 12 + 1
+    next_year = month.year + (month.month // 12)
+    end = datetime(next_year, next_month, 1)
+
+    query = MealOrder.query.filter(
+        MealOrder.party_type == "staff",
+        MealOrder.opened_at >= start,
+        MealOrder.opened_at < end,
+        MealOrder.status != "cancelled",
+    )
+    if staff_filter:
+        query = query.filter(MealOrder.staff_id == staff_filter)
+
+    orders = query.order_by(MealOrder.opened_at.desc()).all()
+
+    import csv
+    from io import StringIO
+    from flask import Response
+
+    si = StringIO()
+    writer = csv.writer(si)
+    writer.writerow(["Date", "Order", "Staff", "Items", "Total"])
+
+    for order in orders:
+        items = "; ".join(
+            f"{line.quantity}x {line.item_name}"
+            for line in order.lines if line.status != "void"
+        )
+        writer.writerow([
+            order.opened_at.strftime("%Y-%m-%d %H:%M") if order.opened_at else "",
+            order.order_number,
+            order.staff.full_name if order.staff else "",
+            items,
+            float(order.total or 0),
+        ])
+
+    output = si.getvalue()
+    filename = f"staff_meals_{month.strftime('%Y-%m')}.csv"
+    return Response(
+        output,
+        mimetype="text/csv",
+        headers={"Content-Disposition": f"attachment; filename={filename}"},
+    )
+
+@cashier_bp.route("/reports/patients")
+@login_required(roles={"admin", "cashier"})
+def patient_meals_report():
+    raw = request.args.get("month", "").strip()
+    ward_filter = request.args.get("ward", "").strip()
+
+    try:
+        month = datetime.strptime(raw, "%Y-%m").date().replace(day=1)
+    except ValueError:
+        today = datetime.now().date()
+        month = today.replace(day=1)
+
+    start = datetime.combine(month, datetime.min.time())
+    next_month = month.month % 12 + 1
+    next_year = month.year + (month.month // 12)
+    end = datetime(next_year, next_month, 1)
+
+    query = MealOrder.query.filter(
+        MealOrder.party_type == "patient",
+        MealOrder.opened_at >= start,
+        MealOrder.opened_at < end,
+        MealOrder.status != "cancelled",
+    )
+
+    if ward_filter:
+        query = query.filter(MealOrder.ward_name.ilike(f"%{ward_filter}%"))
+
+    orders = query.order_by(MealOrder.opened_at.desc()).all()
+
+    from collections import defaultdict
+    by_ward = defaultdict(lambda: {"count": 0, "total": 0.0})
+    for order in orders:
+        key = (order.ward_name or "Unknown").strip() or "Unknown"
+        by_ward[key]["count"] += 1
+        by_ward[key]["total"] += float(order.total or 0)
+
+    return render_template(
+        "reports_patients.html",
+        month=month,
+        by_ward=dict(by_ward),
+        orders=orders,
+        grand=sum(v["total"] for v in by_ward.values()),
+        ward_filter=ward_filter,
+    )
+
+@cashier_bp.route("/reports/patients/export")
+@login_required(roles={"admin", "cashier"})
+def patient_meals_export():
+    raw = request.args.get("month", "").strip()
+    ward_filter = request.args.get("ward", "").strip()
+
+    try:
+        month = datetime.strptime(raw, "%Y-%m").date().replace(day=1)
+    except ValueError:
+        today = datetime.now().date()
+        month = today.replace(day=1)
+
+    start = datetime.combine(month, datetime.min.time())
+    next_month = month.month % 12 + 1
+    next_year = month.year + (month.month // 12)
+    end = datetime(next_year, next_month, 1)
+
+    query = MealOrder.query.filter(
+        MealOrder.party_type == "patient",
+        MealOrder.opened_at >= start,
+        MealOrder.opened_at < end,
+        MealOrder.status != "cancelled",
+    )
+    if ward_filter:
+        query = query.filter(MealOrder.ward_name.ilike(f"%{ward_filter}%"))
+
+    orders = query.order_by(MealOrder.opened_at.desc()).all()
+
+    import csv
+    from io import StringIO
+    from flask import Response
+
+    si = StringIO()
+    writer = csv.writer(si)
+    writer.writerow(["Date", "Order", "Ward", "Patient/Bed", "Items", "Total"])
+
+    for order in orders:
+        items = "; ".join(
+            f"{line.quantity}x {line.item_name}"
+            for line in order.lines if line.status != "void"
+        )
+        writer.writerow([
+            order.opened_at.strftime("%Y-%m-%d %H:%M") if order.opened_at else "",
+            order.order_number,
+            order.ward_name or "",
+            order.patient_name or "",
+            items,
+            float(order.total or 0),
+        ])
+
+    output = si.getvalue()
+    filename = f"patient_meals_{month.strftime('%Y-%m')}.csv"
+    return Response(
+        output,
+        mimetype="text/csv",
+        headers={"Content-Disposition": f"attachment; filename={filename}"},
     )
