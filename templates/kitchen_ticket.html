@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Kitchen Ticket {{ order.order_number }}</title>
+  <style>
+    @page { size: 80mm auto; margin: 4mm; }
+    body {
+      font-family: "Courier New", Courier, monospace;
+      font-size: 13px;
+      width: 72mm;
+      margin: 0 auto;
+    }
+    h1 { font-size: 16px; text-align: center; margin: 0 0 6px; }
+    .center { text-align: center; }
+    hr { border: none; border-top: 1px dashed #000; margin: 8px 0; }
+    table { width: 100%; }
+    td { padding: 3px 0; }
+    .big { font-size: 15px; font-weight: bold; }
+    .no-print { margin: 10px 0; text-align: center; }
+    @media print { .no-print { display: none; } }
+  </style>
+</head>
+<body>
+  <div class="no-print">
+    <button onclick="window.print()">Print ticket</button>
+  </div>
+
+  <h1>KITCHEN TICKET</h1>
+  <div class="center big">{{ order.order_number }}</div>
+  <div class="center">{{ order.opened_at.strftime('%d %b %Y %H:%M') if order.opened_at else '' }}</div>
+  <hr>
+
+  {% if order.table %}
+    <div class="center big">Table {{ order.table.label }}</div>
+  {% elif order.party_type == 'staff' %}
+    <div class="center big">STAFF ORDER</div>
+    {% if order.staff %}<div class="center">{{ order.staff.full_name }}</div>{% endif %}
+  {% elif order.party_type == 'patient' %}
+    <div class="center big">PATIENT ORDER</div>
+    {% if order.ward_name %}<div class="center">{{ order.ward_name }}</div>{% endif %}
+    {% if order.patient_name %}<div class="center">{{ order.patient_name }}</div>{% endif %}
+  {% endif %}
+
+  <hr>
+  <table>
+    {% for line in order.lines if line.status != 'void' %}
+    <tr>
+      <td class="big">{{ line.quantity }} x</td>
+      <td>{{ line.item_name }}</td>
+    </tr>
+    {% if line.notes %}
+    <tr><td></td><td><small>Note: {{ line.notes }}</small></td></tr>
+    {% endif %}
+    {% endfor %}
+  </table>
+  <hr>
+  <div class="center">Thank you</div>
+
+  <script>window.addEventListener("load", function () { window.print(); });</script>
+</body>
+</html>

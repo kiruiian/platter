@@ -14,20 +14,23 @@
   <div class="text-end">
     <div class="text-muted small">Total</div>
     <div class="fs-3 fw-bold">KES {{ '%.2f'|format(order.total or 0) }}</div>
+
     {% if order.status == 'draft' and session.get('role') in ['admin', 'waiter', 'cashier'] %}
-    <form method="POST" action="{{ url_for('orders.order_submit', order_id=order.id) }}" class="mt-2">
+    <form method="POST" action="{{ url_for('orders.order_submit', order_id=order.id) }}" class="mt-2" id="send-to-kitchen-form">
       <button type="submit" class="btn btn-dark">Send to kitchen</button>
     </form>
     {% endif %}
+
     {% if order.status in ['submitted', 'in_kitchen'] and session.get('role') in ['admin', 'waiter', 'cashier'] %}
     <form method="POST" action="{{ url_for('orders.order_mark_ready', order_id=order.id) }}" class="mt-2">
       <button type="submit" class="btn btn-success">Mark ready</button>
     </form>
     {% endif %}
+
     {% if order.status == 'ready' and session.get('role') in ['admin', 'waiter'] %}
-      <form method="POST" action="{{ url_for('orders.order_mark_served', order_id=order.id) }}" class="mt-2">
-        <button type="submit" class="btn btn-success">Mark served</button>
-      </form>
+    <form method="POST" action="{{ url_for('orders.order_mark_served', order_id=order.id) }}" class="mt-2">
+      <button type="submit" class="btn btn-success">Mark served</button>
+    </form>
     {% endif %}
   </div>
 </div>
@@ -114,4 +117,45 @@
     </div>
   </div>
 </div>
+
+{% if order.status == 'draft' and session.get('role') in ['admin', 'waiter', 'cashier'] %}
+<script>
+document.getElementById('send-to-kitchen-form').addEventListener('submit', function () {
+  const orderNumber = "{{ order.order_number }}";
+  const tableInfo = "{% if order.table %}Table {{ order.table.label }}{% elif order.party_type == 'staff' %}Staff order{% elif order.party_type == 'patient' %}Patient order{% else %}Order{% endif %}";
+
+  let itemsText = "";
+  {% for line in order.lines if line.status != 'void' %}
+    itemsText += "{{ line.quantity }} {{ line.item_name }}. ";
+  {% endfor %}
+
+  const message = "New order. " + orderNumber + ". " + tableInfo + ". " + itemsText;
+
+  function doSpeak() {
+    if (!("speechSynthesis" in window)) return;
+    window.speechSynthesis.cancel();
+
+    const utterance = new SpeechSynthesisUtterance(message);
+    utterance.rate = 0.75;
+    utterance.volume = 1;
+    utterance.lang = "en-US";
+
+    const voices = window.speechSynthesis.getVoices();
+    if (voices.length > 0) {
+      utterance.voice = voices.find(v => v.lang.startsWith("en")) || voices[0];
+    }
+
+    window.speechSynthesis.speak(utterance);
+  }
+
+  if (window.speechSynthesis.getVoices().length === 0) {
+    window.speechSynthesis.onvoiceschanged = doSpeak;
+  } else {
+    doSpeak();
+  }
+
+  setTimeout(doSpeak, 500);
+});
+</script>
+{% endif %}
 {% endblock %}
