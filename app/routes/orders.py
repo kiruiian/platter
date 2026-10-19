@@ -198,10 +198,13 @@ def order_submit(order_id):
     if order.status not in {"draft", "submitted"}:
         flash("Order cannot be submitted in its current status.", "warning")
         return redirect(url_for("orders.order_detail", order_id=order.id))
+
     order.status = "submitted"
     db.session.commit()
     flash(f"{order.order_number} sent to kitchen.", "success")
-    return redirect(url_for("orders.order_detail", order_id=order.id))
+
+    # Open kitchen ticket
+    return redirect(url_for("orders.kitchen_ticket", order_id=order.id))
 
 @orders_bp.route("/orders/<int:order_id>/lines/<int:line_id>/void", methods=["POST"])
 @login_required(roles={"admin", "waiter", "cashier"})
@@ -242,3 +245,10 @@ def order_mark_served(order_id):
     db.session.commit()
     flash(f"{order.order_number} marked served. Cashier can bill.", "success")
     return redirect(url_for("orders.order_detail", order_id=order.id))
+
+
+@orders_bp.route("/orders/<int:order_id>/ticket")
+@login_required(roles={"admin", "waiter", "cashier", "kitchen"})
+def kitchen_ticket(order_id):
+    order = MealOrder.query.get_or_404(order_id)
+    return render_template("kitchen_ticket.html", order=order)
