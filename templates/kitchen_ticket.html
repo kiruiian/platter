@@ -18,12 +18,17 @@
     td { padding: 3px 0; }
     .big { font-size: 15px; font-weight: bold; }
     .no-print { margin: 10px 0; text-align: center; }
+    .no-print a { margin: 0 8px; color: #000; }
     @media print { .no-print { display: none; } }
   </style>
 </head>
 <body>
   <div class="no-print">
     <button onclick="window.print()">Print ticket</button>
+    <br><br>
+    <a href="{{ url_for('orders.order_detail', order_id=order.id) }}">← Back to order</a>
+    |
+    <a href="{{ url_for('orders.orders_list') }}">Orders list</a>
   </div>
 
   <h1>KITCHEN TICKET</h1>
