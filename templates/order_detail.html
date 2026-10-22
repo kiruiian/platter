@@ -27,7 +27,7 @@
     </form>
     {% endif %}
 
-    {% if order.status == 'ready' and session.get('role') in ['admin', 'waiter'] %}
+    {% if order.status == 'ready' and session.get('role') in ['admin', 'waiter', 'cashier'] %}
     <form method="POST" action="{{ url_for('orders.order_mark_served', order_id=order.id) }}" class="mt-2">
       <button type="submit" class="btn btn-success">Mark served</button>
     </form>

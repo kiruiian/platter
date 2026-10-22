@@ -244,7 +244,7 @@ def order_mark_ready(order_id):
 
 
 @orders_bp.route("/orders/<int:order_id>/served", methods=["POST"])
-@login_required(roles={"admin", "waiter"})
+@login_required(roles={"admin", "waiter", "cashier"})
 def order_mark_served(order_id):
     order = MealOrder.query.get_or_404(order_id)
     if order.status != "ready":

@@ -238,7 +238,7 @@
           {% if session.get('role') in ['admin', 'waiter'] %}
           {% endif %}
 
-          {% if session.get('role') in ['admin', 'waiter'] %}
+          {% if session.get('role') in ['admin', 'waiter', 'cashier'] %}
           <a class="nav-link" href="{{ url_for('tables.tables_list') }}">Floor</a>
           <a class="nav-link" href="{{ url_for('orders.orders_list') }}">Orders</a>
           {% endif %}
