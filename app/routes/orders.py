@@ -269,3 +269,26 @@ def order_mark_served(order_id):
 def kitchen_ticket(order_id):
     order = MealOrder.query.get_or_404(order_id)
     return render_template("kitchen_ticket.html", order=order)
+
+@orders_bp.route("/orders/<int:order_id>/cancel", methods=["POST"])
+@login_required(roles={"admin", "waiter", "cashier"})
+def order_cancel(order_id):
+    order = MealOrder.query.get_or_404(order_id)
+    if order.status in {"closed", "cancelled"}:
+        flash("This order is already closed.", "warning")
+        return redirect(url_for("orders.order_detail", order_id=order.id))
+
+    order.status = "cancelled"
+    if order.table:
+        # Free the table only if no other open orders exist on it
+        still_open = MealOrder.query.filter(
+            MealOrder.table_id == order.table_id,
+            MealOrder.id != order.id,
+            MealOrder.status.in_(["draft", "submitted", "in_kitchen", "ready", "delivered"])
+        ).first()
+        if not still_open:
+            order.table.status = "free"
+
+    db.session.commit()
+    flash(f"Order {order.order_number} cancelled.", "success")
+    return redirect(url_for("tables.tables_list"))

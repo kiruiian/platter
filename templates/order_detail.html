@@ -32,6 +32,13 @@
       <button type="submit" class="btn btn-success">Mark served</button>
     </form>
     {% endif %}
+
+    {% if order.status not in ['closed', 'cancelled'] and session.get('role') in ['admin', 'waiter', 'cashier'] %}
+    <form method="POST" action="{{ url_for('orders.order_cancel', order_id=order.id) }}" class="mt-2"
+      onsubmit="return confirm('Cancel this order and free the table?');">
+      <button type="submit" class="btn btn-outline-danger">Cancel order</button>
+    </form>
+    {% endif %}
   </div>
 </div>
 
