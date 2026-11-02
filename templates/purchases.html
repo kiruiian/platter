@@ -1,0 +1,185 @@
+{% extends "base.html" %}
+{% block title %}Purchases · Platter{% endblock %}
+{% block content %}
+<div class="page-hero d-flex flex-column flex-md-row justify-content-between align-items-md-end gap-3 mb-4">
+  <div>
+    <span class="eyebrow">Inventory control</span>
+    <h1>Supplier purchases</h1>
+    <p>Record stock received with supplier and unit-cost details.</p>
+  </div>
+  <a class="btn btn-outline-light" href="{{ url_for('store.store_list') }}">Back to store</a>
+</div>
+
+<div class="row g-3 mb-4">
+  <div class="col-md-6">
+    <div class="card-platter p-4 h-100">
+      <div class="small text-uppercase text-muted fw-semibold mb-1">Estimated stock value</div>
+      <div class="fs-2 fw-bold">KES {{ '%.2f'|format(inventory_value) }}</div>
+      <p class="small text-muted mb-0">Based on weighted purchase cost for items with recorded purchases.</p>
+    </div>
+  </div>
+  <div class="col-md-6">
+    <div class="card-platter p-4 h-100">
+      <div class="small text-uppercase text-muted fw-semibold mb-1">Items with cost history</div>
+      <div class="fs-2 fw-bold">{{ item_costs|length }} / {{ items|length }}</div>
+      <p class="small text-muted mb-0">Use this screen for future receiving so stock value stays current.</p>
+    </div>
+  </div>
+</div>
+
+<div class="row g-4">
+  <div class="col-xl-8">
+    <section class="card-platter p-4">
+      <div class="mb-3">
+        <h2 class="h5 mb-1">Record a purchase</h2>
+        <p class="small text-muted mb-0">Each line increases stock and creates a movement record.</p>
+      </div>
+      {% if items %}
+      <form method="POST" action="{{ url_for('store.purchase_create') }}" id="purchase-form">
+        <div class="row g-3 mb-3">
+          <div class="col-md-5">
+            <label class="form-label">Supplier <span class="text-muted">(optional)</span></label>
+            <select class="form-select" name="supplier_id">
+              <option value="">No supplier selected</option>
+              {% for supplier in suppliers %}<option value="{{ supplier.id }}">{{ supplier.name }}</option>{% endfor %}
+            </select>
+          </div>
+          <div class="col-md-3">
+            <label class="form-label">Invoice / reference</label>
+            <input class="form-control" name="invoice_number" maxlength="120" placeholder="e.g. INV-2048">
+          </div>
+          <div class="col-md-4">
+            <label class="form-label">Purchase date</label>
+            <input class="form-control" type="date" name="purchased_on" value="{{ today.isoformat() }}" required>
+          </div>
+        </div>
+
+        <div class="table-responsive">
+          <table class="table align-middle" id="purchase-lines">
+            <thead class="table-light"><tr><th>Store item</th><th>Quantity</th><th>Unit cost (KES)</th><th class="text-end">Line total</th><th></th></tr></thead>
+            <tbody>
+              <tr class="purchase-line">
+                <td>
+                  <select class="form-select" name="item_id" required>
+                    <option value="">Choose item</option>
+                    {% for item in items %}<option value="{{ item.id }}">{{ item.name }} ({{ item.unit }})</option>{% endfor %}
+                  </select>
+                </td>
+                <td><input class="form-control purchase-quantity" type="number" name="quantity" min="0.001" step="0.001" required></td>
+                <td><input class="form-control purchase-cost" type="number" name="unit_cost" min="0.01" step="0.01" required></td>
+                <td class="text-end fw-semibold purchase-total">KES 0.00</td>
+                <td class="text-end"><button class="btn btn-sm btn-outline-danger remove-line" type="button" aria-label="Remove line">×</button></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="d-flex flex-column flex-md-row gap-3 justify-content-between align-items-md-end">
+          <button class="btn btn-outline-platter" type="button" id="add-line">Add another item</button>
+          <div class="flex-grow-1">
+            <label class="form-label">Notes <span class="text-muted">(optional)</span></label>
+            <input class="form-control" name="notes" maxlength="255" placeholder="Delivery note, price change, or other detail">
+          </div>
+          <div class="text-md-end">
+            <div class="small text-muted">Receipt total</div>
+            <div class="h5 mb-2" id="purchase-grand-total">KES 0.00</div>
+            <button class="btn btn-platter" type="submit">Record purchase</button>
+          </div>
+        </div>
+      </form>
+      {% else %}
+      <p class="mb-0">Add store items before recording a purchase.</p>
+      {% endif %}
+    </section>
+  </div>
+
+  <div class="col-xl-4">
+    <section class="card-platter p-4">
+      <h2 class="h5 mb-1">Add supplier</h2>
+      <p class="small text-muted mb-3">Keep supplier contacts with your purchasing records.</p>
+      <form method="POST" action="{{ url_for('store.supplier_create') }}">
+        <div class="mb-2"><label class="form-label small">Business name</label><input class="form-control" name="name" maxlength="120" required></div>
+        <div class="mb-2"><label class="form-label small">Contact person</label><input class="form-control" name="contact_name" maxlength="120"></div>
+        <div class="mb-2"><label class="form-label small">Phone</label><input class="form-control" name="phone" maxlength="40"></div>
+        <div class="mb-3"><label class="form-label small">Email</label><input class="form-control" type="email" name="email" maxlength="120"></div>
+        <button class="btn btn-dark w-100" type="submit">Save supplier</button>
+      </form>
+    </section>
+  </div>
+</div>
+
+<section class="card-platter overflow-hidden mt-4">
+  <header class="px-4 py-3 border-bottom d-flex justify-content-between align-items-center">
+    <h2 class="h5 mb-0">Recent purchases</h2>
+    <span class="small text-muted">Latest 30 receipts</span>
+  </header>
+  {% if purchases %}
+  <div class="table-responsive">
+    <table class="table align-middle mb-0">
+      <thead class="table-light"><tr><th>Date</th><th>Reference</th><th>Supplier</th><th>Items</th><th class="text-end">Total</th></tr></thead>
+      <tbody>
+        {% for purchase in purchases %}
+        <tr>
+          <td>{{ purchase.purchased_on.strftime('%d %b %Y') }}</td>
+          <td>{{ purchase.invoice_number or 'Purchase #' ~ purchase.id }}</td>
+          <td>{{ purchase.supplier.name if purchase.supplier else '—' }}</td>
+          <td>
+            {% for line in purchase.lines %}
+              <div>{{ line.item.name }} · {{ '%.3f'|format(line.quantity) }} {{ line.item.unit }} × KES {{ '%.2f'|format(line.unit_cost) }}</div>
+            {% endfor %}
+          </td>
+          <td class="text-end fw-semibold">KES {{ '%.2f'|format(purchase.total) }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}
+  <div class="p-4 text-muted">No costed purchases have been recorded yet.</div>
+  {% endif %}
+</section>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+  (() => {
+    const tableBody = document.querySelector("#purchase-lines tbody");
+    const addButton = document.querySelector("#add-line");
+    const grandTotal = document.querySelector("#purchase-grand-total");
+
+    function syncTotals() {
+      let total = 0;
+      tableBody.querySelectorAll(".purchase-line").forEach((line) => {
+        const quantity = Number(line.querySelector(".purchase-quantity").value || 0);
+        const unitCost = Number(line.querySelector(".purchase-cost").value || 0);
+        const lineTotal = quantity * unitCost;
+        line.querySelector(".purchase-total").textContent = `KES ${lineTotal.toFixed(2)}`;
+        total += lineTotal;
+      });
+      grandTotal.textContent = `KES ${total.toFixed(2)}`;
+    }
+
+    function bindLine(line) {
+      line.querySelectorAll(".purchase-quantity, .purchase-cost").forEach((input) => input.addEventListener("input", syncTotals));
+      line.querySelector(".remove-line").addEventListener("click", () => {
+        if (tableBody.querySelectorAll(".purchase-line").length === 1) {
+          line.querySelectorAll("input").forEach((input) => { input.value = ""; });
+          line.querySelector("select").value = "";
+        } else {
+          line.remove();
+        }
+        syncTotals();
+      });
+    }
+
+    bindLine(tableBody.querySelector(".purchase-line"));
+    addButton.addEventListener("click", () => {
+      const line = tableBody.querySelector(".purchase-line").cloneNode(true);
+      line.querySelectorAll("input").forEach((input) => { input.value = ""; });
+      line.querySelector("select").value = "";
+      line.querySelector(".purchase-total").textContent = "KES 0.00";
+      tableBody.appendChild(line);
+      bindLine(line);
+    });
+  })();
+</script>
+{% endblock %}
