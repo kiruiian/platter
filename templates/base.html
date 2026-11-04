@@ -232,9 +232,13 @@
           {% if session.get('role') in ['admin'] %}
           <a class="nav-link" href="{{ url_for('menu.menu_list') }}">Menu</a>
           <a class="nav-link" href="{{ url_for('users.users_list') }}">Users</a>
+          <a class="nav-link" href="{{ url_for('staff.staff_list') }}">Hospital Staff</a>
           {% endif %}
 
           {% if session.get('role') in ['admin', 'waiter'] %}
+          {% endif %}
+
+          {% if session.get('role') in ['admin', 'waiter', 'cashier'] %}
           <a class="nav-link" href="{{ url_for('tables.tables_list') }}">Floor</a>
           <a class="nav-link" href="{{ url_for('orders.orders_list') }}">Orders</a>
           {% endif %}
@@ -245,8 +249,13 @@
 
           {% if session.get('role') in ['admin', 'cashier'] %}
             <a class="nav-link" href="{{ url_for('cashier.cashier_board') }}">Cashier</a>
-            <a class="nav-link" href="{{ url_for('cashier.daily_report') }}">Reports</a>
-            <a class="nav-link" href="{{ url_for('cashier.monthly_report') }}">Monthly</a>
+            <a class="nav-link" href="{{ url_for('expenses.expenses_list') }}">Expenses</a>
+            <a class="nav-link" href="{{ url_for('cashier.daily_report') }}">Daily Reports</a>
+            <a class="nav-link" href="{{ url_for('cashier.monthly_report') }}">Monthly Reports</a>
+            <a class="nav-link" href="{{ url_for('cashier.staff_meals_report') }}">Staff meals</a>
+            <a class="nav-link" href="{{ url_for('cashier.patient_meals_report') }}">Patient meals</a>
+            <a class="nav-link" href="{{ url_for('cashier.daily_summary') }}">Daily summary</a>
+            <a class="nav-link" href="{{ url_for('cashier.monthly_summary') }}">Monthly summary</a>
           {% endif %}
 
           {% if session.get('role') in ['admin', 'kitchen'] %}

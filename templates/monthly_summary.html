@@ -1,0 +1,52 @@
+{% extends "base.html" %}
+{% block title %}Monthly Summary · Platter{% endblock %}
+{% block content %}
+<div class="page-hero d-flex flex-column flex-md-row justify-content-between align-items-md-end gap-3 mb-4">
+  <div>
+    <span class="eyebrow">Monthly summary</span>
+    <h1>Monthly summary</h1>
+    <p>{{ month.strftime('%B %Y') }}</p>
+  </div>
+  <div class="d-flex gap-2">
+    <form method="GET" class="d-flex gap-2 align-items-end">
+      <input type="month" name="month" class="form-control" value="{{ month.strftime('%Y-%m') }}">
+      <button class="btn btn-light" type="submit">Show</button>
+    </form>
+    <button class="btn btn-outline-light" onclick="window.print()">Print</button>
+    <a href="{{ url_for('cashier.monthly_summary_export', month=month.strftime('%Y-%m')) }}" class="btn btn-outline-light">Download CSV</a>
+  </div>
+</div>
+
+<div class="row g-3 mb-4">
+  <div class="col-md-3"><div class="stat-card s1"><div class="stat-label">Sales</div><div class="stat-value">KES {{ '%.2f'|format(sales) }}</div></div></div>
+  <div class="col-md-3"><div class="stat-card s3"><div class="stat-label">Expenses</div><div class="stat-value">KES {{ '%.2f'|format(expenses_total) }}</div></div></div>
+  <div class="col-md-3"><div class="stat-card s4"><div class="stat-label">Net Profit</div><div class="stat-value">KES {{ '%.2f'|format(net_profit) }}</div></div></div>
+  <div class="col-md-3"><div class="stat-card s2"><div class="stat-label">Closed orders</div><div class="stat-value">{{ closed }}</div></div></div>
+</div>
+
+<div class="row g-3 mb-4">
+  <div class="col-md-6"><div class="card-platter p-3"><div class="fw-semibold">Staff meals</div><div class="fs-4">KES {{ '%.2f'|format(staff_total) }}</div></div></div>
+  <div class="col-md-6"><div class="card-platter p-3"><div class="fw-semibold">Patient meals</div><div class="fs-4">KES {{ '%.2f'|format(patient_total) }}</div></div></div>
+</div>
+
+{% if expenses %}
+<section class="card-platter overflow-hidden">
+  <header class="px-4 py-3 border-bottom"><h2 class="h6 fw-bold mb-0">Expenses</h2></header>
+  <div class="table-responsive">
+    <table class="table mb-0">
+      <thead class="table-light"><tr><th>Date</th><th>Description</th><th>Category</th><th class="text-end">Amount</th></tr></thead>
+      <tbody>
+        {% for e in expenses %}
+        <tr>
+          <td>{{ e.expense_date }}</td>
+          <td>{{ e.description }}</td>
+          <td>{{ e.category | title }}</td>
+          <td class="text-end">KES {{ '%.2f'|format(e.amount) }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</section>
+{% endif %}
+{% endblock %}

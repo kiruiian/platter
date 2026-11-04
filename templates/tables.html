@@ -58,12 +58,27 @@
         </div>
         {% elif session.get('role') in ['admin', 'waiter', 'cashier'] %}
         <form method="POST" action="{{ url_for('orders.order_open_table', table_id=t.id) }}" class="mt-2">
-          <select name="party_type" class="form-select form-select-sm mb-2" required>
+          <select name="party_type" class="form-select form-select-sm mb-2 party-type-select" required>
             <option value="customer">Customer</option>
             <option value="staff">Staff</option>
             <option value="patient">Patient</option>
           </select>
-          <input type="text" name="customer_name" class="form-control form-control-sm mb-2" placeholder="Guest name">
+
+          <!-- Customer -->
+          <input type="text" name="customer_name" class="form-control form-control-sm mb-2 customer-field" placeholder="Guest name">
+
+          <!-- Staff -->
+          <select name="staff_id" class="form-select form-select-sm mb-2 staff-field d-none">
+            <option value="">Select staff member</option>
+            {% for s in staff %}
+              <option value="{{ s.id }}">{{ s.full_name }}{% if s.department %} ({{ s.department }}){% endif %}</option>
+            {% endfor %}
+          </select>
+
+          <!-- Patient -->
+          <input type="text" name="ward_name" class="form-control form-control-sm mb-2 patient-field d-none" placeholder="Ward">
+          <input type="text" name="patient_name" class="form-control form-control-sm mb-2 patient-field d-none" placeholder="Patient / Bed">
+
           <button type="submit" class="btn btn-dark btn-sm w-100">Open order</button>
         </form>
         {% endif %}
@@ -78,4 +93,24 @@
   </div>
   {% endfor %}
 </div>
+
+<script>
+document.querySelectorAll('.party-type-select').forEach(function(sel) {
+  sel.addEventListener('change', function() {
+    const form = this.closest('form');
+    form.querySelectorAll('.customer-field, .staff-field, .patient-field').forEach(function(el) {
+      el.classList.add('d-none');
+    });
+    if (this.value === 'customer') {
+      form.querySelectorAll('.customer-field').forEach(function(el) { el.classList.remove('d-none'); });
+    }
+    if (this.value === 'staff') {
+      form.querySelectorAll('.staff-field').forEach(function(el) { el.classList.remove('d-none'); });
+    }
+    if (this.value === 'patient') {
+      form.querySelectorAll('.patient-field').forEach(function(el) { el.classList.remove('d-none'); });
+    }
+  });
+});
+</script>
 {% endblock %}

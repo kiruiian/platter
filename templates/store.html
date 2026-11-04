@@ -1,8 +1,25 @@
 {% extends "base.html" %}
 {% block title %}Store · Platter{% endblock %}
 {% block content %}
-<h1 class="h3 brand-font mb-1">Store</h1>
-<p class="text-muted mb-4">Admin receives stock. Kitchen issues what they take.</p>
+<div class="d-flex flex-column flex-md-row justify-content-between align-items-md-end gap-3 mb-4">
+  <div>
+    <h1 class="h3 brand-font mb-1">Store</h1>
+    <p class="text-muted mb-0">Admin receives stock. Kitchen issues what they take.</p>
+  </div>
+  {% if session.get('role') == 'admin' %}
+  <a class="btn btn-platter" href="{{ url_for('store.purchases_list') }}">Supplier purchases &amp; costs</a>
+  {% endif %}
+</div>
+
+{% if session.get('role') == 'admin' %}
+<div class="card-platter p-3 mb-4 d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-2">
+  <div>
+    <div class="small text-uppercase text-muted fw-semibold">Estimated stock value</div>
+    <div class="h4 mb-0">KES {{ '%.2f'|format(inventory_value) }}</div>
+  </div>
+  <div class="small text-muted">Based on weighted purchase cost. Add costs through Supplier purchases to value more items.</div>
+</div>
+{% endif %}
 
 {% if low_items %}
 <div class="alert alert-warning">
@@ -47,7 +64,9 @@
           <th>Item</th>
           <th>On hand</th>
           {% if session.get('role') == 'admin' %}
-          <th>Receive</th>
+          <th>Estimated unit cost</th>
+          <th class="text-end">Estimated value</th>
+          <th>Quick receive (no cost)</th>
           {% endif %}
           <th>Issue to kitchen</th>
         </tr>
@@ -61,6 +80,9 @@
             <span class="text-muted">{{ item.unit }}</span>
           </td>
           {% if session.get('role') == 'admin' %}
+          {% set cost = item_costs.get(item.id) %}
+          <td>{% if cost %}KES {{ '%.2f'|format(cost.unit_cost) }}{% else %}<span class="text-muted">Not set</span>{% endif %}</td>
+          <td class="text-end">{% if cost %}KES {{ '%.2f'|format(cost.estimated_value) }}{% else %}—{% endif %}</td>
           <td>
             <form method="POST" action="{{ url_for('store.store_receive', item_id=item.id) }}" class="d-flex gap-1">
               <input type="number" step="0.01" min="0.01" name="quantity" class="form-control form-control-sm" style="width:5.5rem" placeholder="Qty" required>
@@ -79,7 +101,7 @@
         </tr>
         {% endfor %}
         {% if not items %}
-        <tr><td colspan="4" class="text-muted">No items yet.</td></tr>
+        <tr><td colspan="{% if session.get('role') == 'admin' %}6{% else %}3{% endif %}" class="text-muted">No items yet.</td></tr>
         {% endif %}
       </tbody>
     </table>

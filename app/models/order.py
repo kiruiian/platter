@@ -40,6 +40,8 @@ class MealOrder(db.Model):
     subtotal = db.Column(Numeric(10, 2), default=0)
     tax = db.Column(Numeric(10, 2), default=0)
     total = db.Column(Numeric(10, 2), default=0)
+    staff_id = db.Column(db.Integer, db.ForeignKey("hospital_staff.id"), nullable=True)
+    staff = db.relationship("HospitalStaff")
 
     table = db.relationship("RestaurantTable", back_populates="meal_orders")
     opened_by = db.relationship("User", back_populates="meal_orders", foreign_keys=[opened_by_id])
@@ -70,3 +72,24 @@ class MealOrderLine(db.Model):
 
     meal_order = db.relationship("MealOrder", back_populates="lines")
     menu_item = db.relationship("MenuItem", back_populates="order_lines")
+
+class HospitalStaff(db.Model):
+    __tablename__ = "hospital_staff"
+
+    id = db.Column(db.Integer, primary_key=True)
+    full_name = db.Column(db.String(120), nullable=False)
+    department = db.Column(db.String(80))          # e.g. Nursing, Lab, Admin
+    employee_no = db.Column(db.String(40))         # optional
+    active = db.Column(db.Boolean, default=True)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+class Expense(db.Model):
+    __tablename__ = "expenses"
+
+    id = db.Column(db.Integer, primary_key=True)
+    expense_date = db.Column(db.Date, nullable=False, default=datetime.utcnow)
+    description = db.Column(db.String(200), nullable=False)
+    amount = db.Column(Numeric(10, 2), nullable=False)
+    category = db.Column(db.String(40), default="other")
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    created_by_id = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=True)

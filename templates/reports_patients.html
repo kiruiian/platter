@@ -1,0 +1,97 @@
+{% extends "base.html" %}
+{% block title %}Patient meals · Platter{% endblock %}
+{% block content %}
+<div class="page-hero d-flex flex-column flex-md-row justify-content-between align-items-md-end gap-3 mb-4">
+  <div>
+    <span class="eyebrow">Hospital patients</span>
+    <h1>Patient meals</h1>
+    <p>{{ month.strftime('%B %Y') }}</p>
+  </div>
+  <form method="GET" class="d-flex gap-2 align-items-end">
+    <div>
+      <label class="form-label small text-white-50 mb-1">Month</label>
+      <input type="month" name="month" class="form-control" value="{{ month.strftime('%Y-%m') }}">
+    </div>
+    <div>
+      <label class="form-label small text-white-50 mb-1">Ward</label>
+      <input type="text" name="ward" class="form-control" placeholder="Filter ward" value="{{ ward_filter }}">
+    </div>
+    <button class="btn btn-light" type="submit">Show</button>
+    <a href="{{ url_for('cashier.patient_meals_export', month=month.strftime('%Y-%m'), ward=ward_filter) }}" 
+   class="btn btn-outline-light">Download CSV</a>
+  </form>
+</div>
+
+<div class="row g-3 mb-4">
+  <div class="col-md-4">
+    <div class="stat-card s2">
+      <div class="stat-label">Total patient meals</div>
+      <div class="stat-value">KES {{ '%.2f'|format(grand) }}</div>
+    </div>
+  </div>
+</div>
+
+<!-- Summary by ward -->
+<section class="card-platter overflow-hidden mb-4">
+  <header class="px-4 py-3 border-bottom">
+    <h2 class="h6 fw-bold mb-0">By ward</h2>
+  </header>
+  <div class="table-responsive">
+    <table class="table mb-0">
+      <thead class="table-light">
+        <tr><th>Ward</th><th>Orders</th><th class="text-end">Total</th></tr>
+      </thead>
+      <tbody>
+        {% for ward, row in by_ward.items() %}
+        <tr>
+          <td>{{ ward }}</td>
+          <td>{{ row.count }}</td>
+          <td class="text-end">KES {{ '%.2f'|format(row.total) }}</td>
+        </tr>
+        {% else %}
+        <tr><td colspan="3" class="text-center text-muted py-4">No patient meals.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<!-- Detailed breakdown -->
+<section class="card-platter overflow-hidden">
+  <header class="px-4 py-3 border-bottom">
+    <h2 class="h6 fw-bold mb-0">Order breakdown</h2>
+  </header>
+  <div class="table-responsive">
+    <table class="table mb-0">
+      <thead class="table-light">
+        <tr>
+          <th>Date</th>
+          <th>Order</th>
+          <th>Ward</th>
+          <th>Patient / Bed</th>
+          <th>Items</th>
+          <th class="text-end">Total</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for order in orders %}
+        <tr>
+          <td>{{ order.opened_at.strftime('%d %b %H:%M') if order.opened_at else '—' }}</td>
+          <td>{{ order.order_number }}</td>
+          <td>{{ order.ward_name or '—' }}</td>
+          <td>{{ order.patient_name or '—' }}</td>
+          <td class="small">
+            {% for line in order.lines if line.status != 'void' %}
+              {{ line.quantity }}× {{ line.item_name }}<br>
+            {% endfor %}
+          </td>
+          <td class="text-end">KES {{ '%.2f'|format(order.total or 0) }}</td>
+        </tr>
+        {% else %}
+        <tr><td colspan="6" class="text-center text-muted py-4">No orders.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</section>
+{% endblock %}

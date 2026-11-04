@@ -1,0 +1,102 @@
+{% extends "base.html" %}
+{% block title %}Staff meals · Platter{% endblock %}
+{% block content %}
+<div class="page-hero d-flex flex-column flex-md-row justify-content-between align-items-md-end gap-3 mb-4">
+  <div>
+    <span class="eyebrow">Hospital staff</span>
+    <h1>Staff meals</h1>
+    <p>{{ month.strftime('%B %Y') }}</p>
+  </div>
+  <form method="GET" class="d-flex gap-2 align-items-end">
+    <div>
+      <label class="form-label small text-white-50 mb-1">Month</label>
+      <input type="month" name="month" class="form-control" value="{{ month.strftime('%Y-%m') }}">
+    </div>
+    <div>
+      <label class="form-label small text-white-50 mb-1">Staff</label>
+      <select name="staff_id" class="form-select">
+        <option value="">All staff</option>
+        {% for s in all_staff %}
+        <option value="{{ s.id }}" {% if selected_staff == s.id %}selected{% endif %}>
+          {{ s.full_name }}
+        </option>
+        {% endfor %}
+      </select>
+    </div>
+    <button class="btn btn-light" type="submit">Show</button>
+    <a href="{{ url_for('cashier.staff_meals_export', month=month.strftime('%Y-%m'), staff_id=selected_staff) }}" 
+   class="btn btn-outline-light">Download CSV</a>
+  </form>
+</div>
+
+<div class="row g-3 mb-4">
+  <div class="col-md-4">
+    <div class="stat-card s1">
+      <div class="stat-label">Total</div>
+      <div class="stat-value">KES {{ '%.2f'|format(grand) }}</div>
+    </div>
+  </div>
+</div>
+
+<!-- Summary by staff -->
+<section class="card-platter overflow-hidden mb-4">
+  <header class="px-4 py-3 border-bottom">
+    <h2 class="h6 fw-bold mb-0">Summary</h2>
+  </header>
+  <div class="table-responsive">
+    <table class="table mb-0">
+      <thead class="table-light">
+        <tr><th>Staff</th><th>Orders</th><th class="text-end">Total</th></tr>
+      </thead>
+      <tbody>
+        {% for sid, row in by_staff.items() %}
+        <tr>
+          <td>{{ row.name }}</td>
+          <td>{{ row.count }}</td>
+          <td class="text-end">KES {{ '%.2f'|format(row.total) }}</td>
+        </tr>
+        {% else %}
+        <tr><td colspan="3" class="text-center text-muted py-4">No staff meals.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<!-- Detailed breakdown -->
+<section class="card-platter overflow-hidden">
+  <header class="px-4 py-3 border-bottom">
+    <h2 class="h6 fw-bold mb-0">Breakdown</h2>
+  </header>
+  <div class="table-responsive">
+    <table class="table mb-0">
+      <thead class="table-light">
+        <tr>
+          <th>Date</th>
+          <th>Order</th>
+          <th>Staff</th>
+          <th>Items</th>
+          <th class="text-end">Total</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for order in orders %}
+        <tr>
+          <td>{{ order.opened_at.strftime('%d %b %H:%M') if order.opened_at else '—' }}</td>
+          <td>{{ order.order_number }}</td>
+          <td>{{ order.staff.full_name if order.staff else '—' }}</td>
+          <td class="small">
+            {% for line in order.lines if line.status != 'void' %}
+              {{ line.quantity }}× {{ line.item_name }}<br>
+            {% endfor %}
+          </td>
+          <td class="text-end">KES {{ '%.2f'|format(order.total or 0) }}</td>
+        </tr>
+        {% else %}
+        <tr><td colspan="5" class="text-center text-muted py-4">No orders.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</section>
+{% endblock %}

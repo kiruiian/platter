@@ -1,1 +1,0 @@
-# Platter application package
