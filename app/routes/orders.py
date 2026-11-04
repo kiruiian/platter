@@ -261,7 +261,12 @@ def order_mark_served(order_id):
             order.table.status = "free"
 
     db.session.commit()
-    flash(f"{order.order_number} marked served.", "success")
+    message = (
+        f"{order.order_number} marked served."
+        if order.status == "closed"
+        else f"{order.order_number} marked served. Cashier can bill."
+    )
+    flash(message, "success")
     return redirect(url_for("orders.order_detail", order_id=order.id))
 
 @orders_bp.route("/orders/<int:order_id>/ticket")
