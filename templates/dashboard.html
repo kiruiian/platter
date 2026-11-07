@@ -1,5 +1,6 @@
 {% extends "base.html" %}
 {% block title %}Dashboard · Platter{% endblock %}
+{% block body_class %}dashboard-page{% endblock %}
 {% block content %}
 <div class="page-hero d-flex flex-column flex-md-row justify-content-between align-items-md-end gap-3 mb-4">
   <div>
@@ -13,6 +14,7 @@
 <div class="row g-3 mb-4">
   <div class="col-6 col-lg-3">
     <div class="stat-card s1">
+      <span class="stat-icon" aria-hidden="true">✦</span>
       <div class="stat-label">Categories</div>
       <div class="stat-value">{{ category_count }}</div>
       <div class="stat-meta small opacity-75">Menu groups</div>
@@ -20,6 +22,7 @@
   </div>
   <div class="col-6 col-lg-3">
     <div class="stat-card s2">
+      <span class="stat-icon" aria-hidden="true">↗</span>
       <div class="stat-label">Menu items</div>
       <div class="stat-value">{{ item_count }}</div>
       <div class="stat-meta small opacity-75">Ready to serve</div>
@@ -27,6 +30,7 @@
   </div>
   <div class="col-6 col-lg-3">
     <div class="stat-card s3">
+      <span class="stat-icon" aria-hidden="true">⌑</span>
       <div class="stat-label">Tables</div>
       <div class="stat-value">{{ table_count }}</div>
       <div class="stat-meta small opacity-75">Active floor</div>
@@ -34,6 +38,7 @@
   </div>
   <div class="col-6 col-lg-3">
     <div class="stat-card s4">
+      <span class="stat-icon" aria-hidden="true">◷</span>
       <div class="stat-label">Open orders</div>
       <div class="stat-value">{{ open_count }}</div>
       <div class="stat-meta small opacity-75">In motion</div>
@@ -44,7 +49,10 @@
 <div class="row g-3 mb-4">
   <div class="col-lg-7">
     <div class="card-platter h-100">
-      <div class="card-header border-0 bg-transparent px-4 py-3 fw-semibold">Open tickets</div>
+      <div class="card-header dashboard-card-heading border-0 bg-transparent px-4 py-3">
+        <span class="fw-semibold">Open tickets</span>
+        <span class="small text-muted">Active service</span>
+      </div>
       <div class="card-body px-4 pb-4">
         {% if open_orders %}
         <div class="table-responsive">
@@ -71,9 +79,12 @@
     </div>
   </div>
   <div class="col-lg-5">
-    <div class="card-platter h-100">
-      <div class="card-header border-0 bg-transparent px-4 py-3 fw-semibold">Today</div>
-      <div class="card-body px-4 pb-4">
+    <div class="card-platter dashboard-takings h-100">
+      <div class="card-header dashboard-card-heading border-0 bg-transparent px-4 py-3">
+        <span class="fw-semibold">Today’s takings</span>
+        <span class="small">Confirmed</span>
+      </div>
+      <div class="card-body px-4 pb-4 pt-3">
         <div class="stat-label">Takings</div>
         <div class="stat-value">KES {{ '%.2f'|format(takings) }}</div>
         <div class="small text-muted mt-2">Confirmed payments only. Pending STK prompts are not included.</div>
@@ -83,7 +94,7 @@
 </div>
 
 <div class="d-flex justify-content-between align-items-center mb-3">
-  <h2 class="h5 mb-0">Quick actions</h2>
+  <h2 class="dashboard-section-title h5 mb-0">Quick actions</h2>
   <span class="small text-muted">Daily flow</span>
 </div>
 
