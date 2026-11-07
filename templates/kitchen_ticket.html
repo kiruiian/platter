@@ -41,6 +41,12 @@
   {% elif order.party_type == 'staff' %}
     <div class="center big">STAFF ORDER</div>
     {% if order.staff %}<div class="center">{{ order.staff.full_name }}</div>{% endif %}
+  {% elif order.order_type == 'ward' %}
+    <div class="center big">WARD MEAL ORDER</div>
+    {% if order.ward_name %}<div class="center">{{ order.ward_name }}</div>{% endif %}
+    {% if order.meal_slot %}<div class="center">{{ order.meal_slot | title }}</div>{% endif %}
+    {% if order.diet_type %}<div class="center">Diet: {{ order.diet_type }}</div>{% endif %}
+    {% if order.notes %}<div class="center">Note: {{ order.notes }}</div>{% endif %}
   {% elif order.party_type == 'patient' %}
     <div class="center big">PATIENT ORDER</div>
     {% if order.ward_name %}<div class="center">{{ order.ward_name }}</div>{% endif %}

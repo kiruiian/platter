@@ -31,6 +31,12 @@
 </div>
 {% endif %}
 
+{% if hmis_ward_message %}
+<div class="alert alert-warning py-2 small mb-3" role="status">{{ hmis_ward_message }}</div>
+{% elif hmis_wards is not none and not hmis_wards %}
+<div class="alert alert-info py-2 small mb-3" role="status">No active HMIS wards were returned. You can enter a ward name in the Patient order option.</div>
+{% endif %}
+
 <div class="row g-3">
   {% for t in tables %}
   {% set active_order = current.get(t.id) %}
@@ -75,11 +81,38 @@
             {% endfor %}
           </select>
 
-          <!-- Patient -->
-          <input type="text" name="ward_name" class="form-control form-control-sm mb-2 patient-field d-none" placeholder="Ward">
-          <input type="text" name="patient_name" class="form-control form-control-sm mb-2 patient-field d-none" placeholder="Patient / Bed">
+          <div class="patient-field d-none">
+            <label class="form-check small mb-2">
+              <input type="checkbox" name="ward_delivery" value="1" class="form-check-input ward-delivery-toggle">
+              <span class="form-check-label">Ward meal delivery (not a table order)</span>
+            </label>
+            <div class="patient-details">
+              <input type="text" name="patient_name" class="form-control form-control-sm mb-2" placeholder="Patient / Bed">
+            </div>
+            <div class="ward-delivery-fields d-none">
+              {% if hmis_wards %}
+              <select name="ward_name" class="form-select form-select-sm mb-2" disabled>
+                <option value="">Select ward</option>
+                {% for ward in hmis_wards %}
+                <option value="{{ ward.name }}">{{ ward.name }}{% if ward.department %} · {{ ward.department }}{% endif %}</option>
+                {% endfor %}
+              </select>
+              {% else %}
+              <input type="text" name="ward_name" class="form-control form-control-sm mb-2" placeholder="Ward" maxlength="80" disabled>
+              {% endif %}
+              <select name="meal_slot" class="form-select form-select-sm mb-2" disabled>
+                <option value="">Select meal</option>
+                <option value="breakfast">Breakfast</option>
+                <option value="lunch">Lunch</option>
+                <option value="dinner">Dinner</option>
+                <option value="snack">Snack</option>
+              </select>
+              <input type="text" name="diet_type" class="form-control form-control-sm mb-2" maxlength="40" placeholder="Ward-level dietary guidance (optional)" disabled>
+              <input type="text" name="notes" class="form-control form-control-sm mb-2" maxlength="500" placeholder="Kitchen note — no patient names or identifiers" disabled>
+            </div>
+          </div>
 
-          <button type="submit" class="btn btn-dark btn-sm w-100">Open order</button>
+          <button type="submit" class="btn btn-dark btn-sm w-100 order-submit-button">Open order</button>
         </form>
         {% endif %}
       </div>
@@ -96,21 +129,58 @@
 
 <script>
 document.querySelectorAll('.party-type-select').forEach(function(sel) {
+  const form = sel.closest('form');
+  const submitButton = form.querySelector('.order-submit-button');
+
+  function syncPatientFields() {
+    const patientDetails = form.querySelector('.patient-details');
+    const wardFields = form.querySelector('.ward-delivery-fields');
+    const wardToggle = form.querySelector('.ward-delivery-toggle');
+    const isWardDelivery = wardToggle.checked;
+
+    patientDetails.classList.toggle('d-none', isWardDelivery);
+    wardFields.classList.toggle('d-none', !isWardDelivery);
+    patientDetails.querySelectorAll('input, select').forEach(function(field) {
+      field.disabled = isWardDelivery;
+    });
+    wardFields.querySelectorAll('input, select').forEach(function(field) {
+      field.disabled = !isWardDelivery;
+      field.required = isWardDelivery && ['ward_name', 'meal_slot'].includes(field.name);
+    });
+    submitButton.textContent = isWardDelivery ? 'Create ward meal' : 'Open order';
+  }
+
   sel.addEventListener('change', function() {
-    const form = this.closest('form');
+    const wardToggle = form.querySelector('.ward-delivery-toggle');
+    wardToggle.disabled = this.value !== 'patient';
+    if (this.value !== 'patient') wardToggle.checked = false;
     form.querySelectorAll('.customer-field, .staff-field, .patient-field').forEach(function(el) {
       el.classList.add('d-none');
     });
+    form.querySelectorAll('.customer-field, .staff-field').forEach(function(el) {
+      el.disabled = true;
+    });
     if (this.value === 'customer') {
-      form.querySelectorAll('.customer-field').forEach(function(el) { el.classList.remove('d-none'); });
+      form.querySelectorAll('.customer-field').forEach(function(el) {
+        el.classList.remove('d-none');
+        el.disabled = false;
+      });
     }
     if (this.value === 'staff') {
-      form.querySelectorAll('.staff-field').forEach(function(el) { el.classList.remove('d-none'); });
+      form.querySelectorAll('.staff-field').forEach(function(el) {
+        el.classList.remove('d-none');
+        el.disabled = false;
+      });
     }
     if (this.value === 'patient') {
       form.querySelectorAll('.patient-field').forEach(function(el) { el.classList.remove('d-none'); });
+      syncPatientFields();
     }
   });
+
+  form.querySelector('.ward-delivery-toggle').addEventListener('change', syncPatientFields);
+  form.querySelectorAll('.customer-field, .staff-field, .patient-field input, .patient-field select')
+    .forEach(function(field) { field.disabled = true; });
 });
 </script>
 {% endblock %}

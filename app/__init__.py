@@ -119,6 +119,8 @@ def create_app(test_config: dict | None = None) -> Flask:
             "PLATTER_HOST",
             "0.0.0.0" if environment == "production" else "127.0.0.1",
         ),
+        HMIS_API_BASE_URL=os.environ.get("HMIS_API_BASE_URL", "").rstrip("/"),
+        HMIS_API_TOKEN=os.environ.get("HMIS_API_TOKEN", ""),
     )
     if test_config:
         app.config.update(test_config)

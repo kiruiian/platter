@@ -20,7 +20,7 @@
   <label class="form-label small fw-semibold text-uppercase text-muted" for="order-search">Find an order</label>
   <div class="input-group">
     <input id="order-search" type="search" name="q" value="{{ search_query }}"
-           class="form-control" placeholder="Order number, guest name, or table">
+           class="form-control" placeholder="Order number, guest name, table, or ward">
     <button class="btn btn-dark" type="submit">Search</button>
     {% if search_query %}
     <a class="btn btn-outline-secondary" href="{{ url_for('orders.orders_list') }}">Clear</a>
@@ -43,7 +43,7 @@
         <tr>
           <th>Order</th>
           <th>Type</th>
-          <th>Table</th>
+          <th>Table / ward</th>
           <th>Status</th>
           <th>Total</th>
           <th>Opened</th>
@@ -55,7 +55,7 @@
         <tr class="{% if o.status == 'ready' %}table-warning{% elif o.status == 'delivered' %}table-success{% endif %}">
           <td class="fw-semibold">{{ o.order_number }}</td>
           <td class="text-capitalize">{{ o.order_type.replace('_', ' ') }}</td>
-          <td>{{ o.table.label if o.table else '—' }}</td>
+          <td>{{ o.table.label if o.table else o.ward_name if o.ward_name else '—' }}</td>
           <td><span class="badge rounded-pill bg-secondary-subtle text-secondary-emphasis px-2 py-2 text-capitalize">{{ o.status }}</span></td>
           <td>{{ '%.2f'|format(o.total or 0) }}</td>
           <td class="small text-muted">{{ o.opened_at.strftime('%d %b %H:%M') if o.opened_at else '—' }}</td>

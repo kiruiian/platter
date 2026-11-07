@@ -30,10 +30,15 @@
       </header>
       <div class="card-body p-4">
         <div class="d-flex flex-wrap gap-2 small text-muted mb-3">
-          <span class="badge rounded-pill bg-light text-dark border">{{ 'Table ' ~ o.table.label if o.table else 'No table' }}</span>
-          {% if o.party_type %}<span class="badge rounded-pill bg-light text-dark border">{{ o.party_type | title }}</span>{% endif %}
+          {% if o.table %}<span class="badge rounded-pill bg-light text-dark border">Table {{ o.table.label }}</span>
+          {% elif o.ward_name %}<span class="badge rounded-pill bg-warning-subtle text-warning-emphasis">Ward · {{ o.ward_name }}</span>
+          {% else %}<span class="badge rounded-pill bg-light text-dark border">No table</span>{% endif %}
+          {% if o.order_type == 'ward' and o.meal_slot %}<span class="badge rounded-pill bg-light text-dark border">{{ o.meal_slot | title }}</span>
+          {% elif o.party_type %}<span class="badge rounded-pill bg-light text-dark border">{{ o.party_type | title }}</span>{% endif %}
           {% if o.customer_name %}<span class="badge rounded-pill bg-light text-dark border">{{ o.customer_name }}</span>{% endif %}
+          {% if o.diet_type %}<span class="badge rounded-pill bg-warning-subtle text-warning-emphasis">Diet · {{ o.diet_type }}</span>{% endif %}
         </div>
+        {% if o.notes %}<p class="small rounded-3 bg-warning-subtle p-2 mb-3"><strong>Ward note:</strong> {{ o.notes }}</p>{% endif %}
 
         <div class="small text-uppercase fw-semibold text-muted mb-2">Items to prepare</div>
         <ul class="list-unstyled mb-4">

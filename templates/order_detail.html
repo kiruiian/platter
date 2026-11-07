@@ -8,8 +8,18 @@
     <div class="text-muted">
       {{ order.order_type.replace('_', ' ') | title }}
       {% if order.table %} · Table <strong>{{ order.table.label }}</strong>{% endif %}
+      {% if order.ward_name %}
+      · <strong>{{ order.ward_name }}</strong>
+      {% if order.meal_slot %} · {{ order.meal_slot | title }}{% endif %}
+      {% endif %}
       · <span class="badge text-bg-secondary">{{ order.status }}</span>
     </div>
+    {% if order.diet_type or order.notes %}
+    <div class="d-flex flex-wrap gap-2 mt-2">
+      {% if order.diet_type %}<span class="badge rounded-pill bg-warning-subtle text-warning-emphasis">Diet: {{ order.diet_type }}</span>{% endif %}
+      {% if order.notes %}<span class="small text-muted">{{ order.notes }}</span>{% endif %}
+    </div>
+    {% endif %}
   </div>
   <div class="text-end">
     <div class="text-muted small">Total</div>
@@ -35,7 +45,7 @@
 
     {% if order.status not in ['closed', 'cancelled'] and session.get('role') in ['admin', 'waiter', 'cashier'] %}
     <form method="POST" action="{{ url_for('orders.order_cancel', order_id=order.id) }}" class="mt-2"
-      onsubmit="return confirm('Cancel this order and free the table?');">
+      onsubmit="return confirm('{% if order.table %}Cancel this order and free the table?{% else %}Cancel this order?{% endif %}');">
       <button type="submit" class="btn btn-outline-danger">Cancel order</button>
     </form>
     {% endif %}
@@ -129,7 +139,7 @@
 <script>
 document.getElementById('send-to-kitchen-form').addEventListener('submit', function () {
   const orderNumber = "{{ order.order_number }}";
-  const tableInfo = "{% if order.table %}Table {{ order.table.label }}{% elif order.party_type == 'staff' %}Staff order{% elif order.party_type == 'patient' %}Patient order{% else %}Order{% endif %}";
+  const tableInfo = "{% if order.table %}Table {{ order.table.label }}{% elif order.order_type == 'ward' %}Ward meal for {{ order.ward_name }}, {{ order.meal_slot }}{% elif order.party_type == 'staff' %}Staff order{% elif order.party_type == 'patient' %}Patient order{% else %}Order{% endif %}";
 
   let itemsText = "";
   {% for line in order.lines if line.status != 'void' %}

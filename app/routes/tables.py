@@ -1,4 +1,5 @@
-from flask import Blueprint, flash, redirect, render_template, request, url_for
+import requests
+from flask import Blueprint, current_app, flash, redirect, render_template, request, url_for
 
 from app.extensions import db
 from app.models import MealOrder, RestaurantTable, HospitalStaff
@@ -8,6 +9,57 @@ from app.routes.auth import login_required
 tables_bp = Blueprint("tables", __name__)
 
 OPEN_STATUSES = ("draft", "submitted", "in_kitchen", "ready", "delivered")
+
+
+def load_hmis_wards():
+    base_url = current_app.config.get("HMIS_API_BASE_URL", "").rstrip("/")
+    token = current_app.config.get("HMIS_API_TOKEN", "")
+    if not base_url or not token:
+        return None, "HMIS ward lookup is not configured; enter the ward manually."
+    if len(token) < 32 or not token.isascii():
+        current_app.logger.error(
+            "HMIS integration token must be at least 32 ASCII characters."
+        )
+        return None, "HMIS integration token must be at least 32 characters."
+    if (
+        current_app.config.get("ENVIRONMENT") == "production"
+        and not base_url.lower().startswith("https://")
+    ):
+        current_app.logger.error("HMIS ward lookup must use HTTPS in production.")
+        return None, "HMIS ward lookup must use HTTPS in production."
+
+    try:
+        response = requests.get(
+            f"{base_url}/api/v1/integrations/platter/wards",
+            headers={"Authorization": f"Bearer {token}"},
+            timeout=(2, 4),
+        )
+        response.raise_for_status()
+    except requests.RequestException as exc:
+        current_app.logger.warning("HMIS ward lookup failed: %s", exc)
+        return None, "HMIS ward lookup is unavailable; enter the ward manually."
+
+    try:
+        payload = response.json()
+    except ValueError:
+        current_app.logger.warning("HMIS ward lookup returned invalid JSON.")
+        return None, "HMIS ward lookup returned an invalid response."
+
+    wards = payload.get("wards") if isinstance(payload, dict) else None
+    if not isinstance(wards, list) or any(
+        not isinstance(ward, dict)
+        or not isinstance(ward.get("name"), str)
+        or not ward["name"].strip()
+        or (
+            ward.get("department") is not None
+            and not isinstance(ward.get("department"), str)
+        )
+        for ward in wards
+    ):
+        current_app.logger.warning("HMIS ward lookup returned an invalid ward list.")
+        return None, "HMIS ward lookup returned an invalid response."
+
+    return wards, None
 
 
 @tables_bp.route("/tables")
@@ -28,7 +80,15 @@ def tables_list():
         if order.table_id and order.table_id not in current:
             current[order.table_id] = order
     staff = HospitalStaff.query.filter_by(active=True).order_by(HospitalStaff.full_name).all()
-    return render_template("tables.html", tables=tables, current=current, staff=staff)
+    hmis_wards, hmis_ward_message = load_hmis_wards()
+    return render_template(
+        "tables.html",
+        tables=tables,
+        current=current,
+        staff=staff,
+        hmis_wards=hmis_wards,
+        hmis_ward_message=hmis_ward_message,
+    )
 
 
 @tables_bp.route("/tables", methods=["POST"])

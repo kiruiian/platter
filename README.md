@@ -60,3 +60,28 @@ The `.env` file contains secrets and is ignored by Git. Do not commit it. Set
 M-Pesa credentials and callback URL only in the environment where that
 integration is configured. A public HTTPS callback URL is required for
 automatic M-Pesa STK callbacks.
+
+## Hospital HMIS ward lookup
+
+Platter can load active ward names and departments from St Gabriel Hospital
+HMIS for ward meal orders. The integration is read-only and does not retrieve
+admissions, bed assignments, patient identifiers, or clinical information.
+If the connection is unavailable, staff can enter the ward name manually.
+To start a ward delivery, use the existing Patient option on an available
+floor table, then select “Ward meal delivery”; this creates a kitchen ticket
+without occupying the selected table or storing patient/bed details.
+
+Configure both applications with the same high-entropy token:
+
+- In HMIS, set `PLATTER_HMIS_API_TOKEN`.
+- In Platter, set `HMIS_API_TOKEN` and `HMIS_API_BASE_URL` to the HMIS origin,
+  for example `https://hmis.example.org`.
+
+Generate a token with PowerShell:
+
+```powershell
+.\.venv\Scripts\python.exe -c "import secrets; print(secrets.token_urlsafe(48))"
+```
+
+Keep the token secret, use HTTPS between deployed systems, and configure the
+values in each application's environment rather than committing them.

@@ -66,6 +66,7 @@ def orders_list():
             or_(
                 MealOrder.order_number.ilike(pattern),
                 MealOrder.customer_name.ilike(pattern),
+                MealOrder.ward_name.ilike(pattern),
                 RestaurantTable.label.ilike(pattern),
             )
         )
@@ -96,17 +97,44 @@ def order_open_table(table_id):
     party_type = request.form.get("party_type", "customer").strip()
     if party_type not in {"customer", "staff", "patient"}:
         party_type = "customer"
+    ward_delivery = (
+        party_type == "patient"
+        and request.form.get("ward_delivery") == "1"
+    )
+    ward_name = request.form.get("ward_name", "").strip()[:80] or None
+    meal_slot = request.form.get("meal_slot", "").strip().lower()
+    if ward_delivery and not ward_name:
+        flash("Select or enter a ward for this meal order.", "danger")
+        return redirect(url_for("tables.tables_list"))
+    if ward_delivery and meal_slot not in {"breakfast", "lunch", "dinner", "snack"}:
+        flash("Select a valid meal slot for the ward order.", "danger")
+        return redirect(url_for("tables.tables_list"))
 
     order = MealOrder(
         order_number=next_order_number(),
-        order_type="dine_in",
+        order_type="ward" if ward_delivery else "dine_in",
         status="draft",
-        table_id=table.id,
+        table_id=None if ward_delivery else table.id,
         opened_by_id=session.get("user_id"),
         party_type=party_type,
         customer_name=request.form.get("customer_name", "").strip()[:120] or None,
-        ward_name=request.form.get("ward_name", "").strip()[:80] or None,
-        patient_name=request.form.get("patient_name", "").strip()[:120] or None,
+        ward_name=ward_name,
+        patient_name=(
+            None
+            if ward_delivery
+            else request.form.get("patient_name", "").strip()[:120] or None
+        ),
+        meal_slot=meal_slot if ward_delivery else None,
+        diet_type=(
+            request.form.get("diet_type", "").strip()[:40] or None
+            if ward_delivery
+            else None
+        ),
+        notes=(
+            request.form.get("notes", "").strip()[:500] or None
+            if ward_delivery
+            else None
+        ),
     )
 
     if party_type == "staff":
@@ -114,11 +142,16 @@ def order_open_table(table_id):
         if staff_id:
             order.staff_id = staff_id
 
-    table.status = "occupied"
     db.session.add(order)
+    if not ward_delivery:
+        table.status = "occupied"
     db.session.commit()
-    flash(f"Order {order.order_number} opened on {table.label}.", "success")
+    if ward_delivery:
+        flash(f"Ward meal order {order.order_number} opened for {ward_name}.", "success")
+    else:
+        flash(f"Order {order.order_number} opened on {table.label}.", "success")
     return redirect(url_for("orders.order_detail", order_id=order.id))
+
 
 @orders_bp.route("/orders/<int:order_id>/add-item")
 @login_required()
